@@ -19,6 +19,8 @@ const BICYCLEBIO_HEADER_STYLE = 'nike' as 'nike' | 'gym';
 export const BRAND_LAYOUTS: Record<BrandId, BrandLayout> = {
   ecombio: ECOMBIO_LAYOUT,
   bicyclebio: {Header: BICYCLEBIO_HEADER_STYLE === 'gym' ? BicycleBioHeaderGym : BicycleBioHeader, Footer: BicycleBioFooter},
+  scooterbio: {Header: BicycleBioHeader, Footer: BicycleBioFooter},
+  skaterbio: {Header: BicycleBioHeader, Footer: BicycleBioFooter},
 };
 
 export function getBrandLayout(brand?: BrandId | null): BrandLayout {

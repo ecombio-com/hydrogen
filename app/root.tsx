@@ -84,6 +84,7 @@ export async function loader(args: Route.LoaderArgs) {
     ...criticalData,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
     brand: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).brand,
+    brandName: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).name,
     origin: new URL(args.request.url).origin,
     locale: `${storefront.i18n.language}-${storefront.i18n.country}`.toLowerCase(),
     shop: getShopAnalytics({

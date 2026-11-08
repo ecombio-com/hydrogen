@@ -1,3 +1,4 @@
+import {useBrandName} from '~/lib/brand-name';
 import type {CartApiQueryFragment, HeaderQuery} from 'storefrontapi.generated';
 import {AccountLink, CartToggle} from '~/components/Header';
 import {Container} from '~/components/ui/container';
@@ -19,7 +20,7 @@ interface BicycleBioHeaderProps {
   publicStoreDomain: string;
 }
 
-const BRAND_NAME = 'BicycleBio';
+
 
 const FALLBACK_ITEMS: MenuItem[] = [
   {id: 'bb-nav-shop', title: 'E-Bikes', url: '/collections/electric-bikes', image: null, items: []},
@@ -32,6 +33,7 @@ const UTILITY_LINKS = [
 ];
 
 export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: BicycleBioHeaderProps) {
+  const BRAND_NAME = useBrandName();
   const {shop, menu} = header;
   const parsed = parseNavMenu(
     (menu?.items ?? []) as unknown as RawMenuItem[],

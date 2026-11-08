@@ -1,3 +1,4 @@
+import {useBrandName} from '~/lib/brand-name';
 import {Suspense} from 'react';
 import {Await} from 'react-router';
 import type {FooterQuery, HeaderQuery} from 'storefrontapi.generated';
@@ -6,7 +7,7 @@ import LocalizedLink from '~/components/ui/localized-link';
 import {Newsletter} from '~/components/footer/newsletter';
 import {PaymentIcons} from '~/components/footer/payment-icons';
 
-const BRAND_NAME = 'BicycleBio';
+
 
 interface FooterProps {
   footer: Promise<FooterQuery | null>;
@@ -69,6 +70,7 @@ const FALLBACK_COLUMNS: Column[] = [
 ];
 
 export function BicycleBioFooter({footer: footerPromise, header, publicStoreDomain}: FooterProps) {
+  const BRAND_NAME = useBrandName();
   const primaryDomainUrl = header.shop.primaryDomain?.url ?? '';
 
   return (

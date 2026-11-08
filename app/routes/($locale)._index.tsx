@@ -1,5 +1,5 @@
 // Path: app/routes/($locale)._index.tsx
-import {useLoaderData} from 'react-router';
+import {redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/($locale)._index';
 import {CategoryCarousel} from '~/components/home/category-carousel';
 import {FeatureSplit} from '~/components/home/feature-split';
@@ -41,6 +41,8 @@ export const meta: Route.MetaFunction = ({data}) =>
 
 export async function loader({context, request}: Route.LoaderArgs) {
   const {storefront, yotpo} = context;
+  const homeCollection = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).homeCollectionHandle;
+  if (homeCollection) throw redirect(`/collections/${homeCollection}`);
   if (getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).brand === 'bicyclebio') {
     const canonical = getUrls(request).canonical;
     return {
