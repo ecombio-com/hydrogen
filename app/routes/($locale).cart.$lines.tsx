@@ -1,4 +1,5 @@
 import {redirect} from 'react-router';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import type {Route} from './+types/($locale).cart.$lines';
 
 /**
@@ -40,10 +41,13 @@ export async function loader({request, context, params}: Route.LoaderArgs) {
   const discount = searchParams.get('discount');
   const discountArray = discount ? [discount] : [];
 
+  const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+
   // create a cart
   const result = await cart.create({
     lines: linesMap,
     discountCodes: discountArray,
+    attributes: [{key: 'storefront', value: slug}],
   });
 
   const cartResult = result.cart;

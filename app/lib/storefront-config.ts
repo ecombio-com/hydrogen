@@ -24,3 +24,18 @@ export function getStorefrontConfig(id?: string | null): StorefrontConfig {
   const key = String(id ?? '').replace(/\D/g, '');
   return CONFIGS[key] ?? CONFIGS[ECOMBIO_ID];
 }
+
+
+// Subsidiary content (pages, collections) shares one Shopify store, so brand ownership is encoded in the handle prefix.
+// A handle owned by another brand must 404 on this storefront.
+const SUBSIDIARY_PREFIX = /^(bicyclebio|scooterbio|skaterbio)-/i;
+
+export function brandPrefixOf(handle: string): string | null {
+  const match = SUBSIDIARY_PREFIX.exec(handle);
+  return match ? match[1].toLowerCase() : null;
+}
+
+export function isOtherBrandHandle(handle: string, currentSlug: string): boolean {
+  const owner = brandPrefixOf(handle);
+  return owner !== null && owner !== currentSlug;
+}

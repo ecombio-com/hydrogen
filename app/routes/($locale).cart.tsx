@@ -9,6 +9,7 @@ import {buttonVariants} from '~/components/ui/button';
 import {Container} from '~/components/ui/container';
 import LocalizedLink from '~/components/ui/localized-link';
 import {Page} from '~/components/ui/page';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 
 export const meta: Route.MetaFunction = () => [
   {title: 'Cart'},
@@ -19,6 +20,9 @@ export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
 
 export async function action({request, context}: Route.ActionArgs) {
   const {cart} = context;
+
+  // A cart that does not exist yet is created by this action: it gets tagged with its storefront below.
+  const hadCart = Boolean(await cart.getCartId());
 
   const formData = await request.formData();
 
@@ -80,6 +84,18 @@ export async function action({request, context}: Route.ActionArgs) {
       throw new Error(`${action} cart action is not defined`);
   }
 
+  // Tag new carts with their storefront so the order shows which brand it came from.
+  if (!hadCart && result?.cart?.id) {
+    try {
+      const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+      const tagged = await cart.updateAttributes([{key: 'storefront', value: slug}], {
+        cartId: result.cart.id,
+      });
+      if (tagged?.cart) result = {...result, cart: tagged.cart};
+    } catch (error) {
+      console.error('Could not tag cart with storefront', error);
+    }
+  }
   const cartId = result?.cart?.id;
   const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
   const {cart: cartResult, errors, warnings} = result;
