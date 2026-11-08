@@ -3,6 +3,7 @@ import {Header} from '~/components/Header';
 import {Footer} from '~/components/Footer';
 import {BicycleBioHeader} from '~/components/BicycleBioHeader';
 import {BicycleBioHeaderGym} from '~/components/BicycleBioHeaderGym';
+import {BicycleBioFooter} from '~/components/BicycleBioFooter';
 import type {BrandId} from '~/brands/registry';
 
 export type BrandLayout = {
@@ -17,7 +18,7 @@ const BICYCLEBIO_HEADER_STYLE: 'nike' | 'gym' = 'gym';
 
 export const BRAND_LAYOUTS: Record<BrandId, BrandLayout> = {
   ecombio: ECOMBIO_LAYOUT,
-  bicyclebio: {Header: BICYCLEBIO_HEADER_STYLE === 'gym' ? BicycleBioHeaderGym : BicycleBioHeader, Footer},
+  bicyclebio: {Header: BICYCLEBIO_HEADER_STYLE === 'gym' ? BicycleBioHeaderGym : BicycleBioHeader, Footer: BicycleBioFooter},
 };
 
 export function getBrandLayout(brand?: BrandId | null): BrandLayout {
