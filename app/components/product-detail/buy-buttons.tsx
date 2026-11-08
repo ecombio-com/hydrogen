@@ -50,7 +50,7 @@ function shopPayUrl(
 export function BuyButtons({
   selectedVariant,
   availableForSale = true,
-  buyWithShop = true,
+  buyWithShop = false,
   quantityPicker = true,
 }: {
   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];

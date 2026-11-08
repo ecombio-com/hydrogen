@@ -16,6 +16,7 @@ type CardNode = Parameters<typeof toProductCardData>[0];
 const DEALS_LIMIT = 8;
 const SCAN_PAGES = 2; // 2 x 250 = the same 500-product fallback scan as Next.js
 const REVIEW_PRODUCTS_LIMIT = 24;
+const REVIEW_CANDIDATES_LIMIT = 60; // caps Yotpo lookups per cold render
 
 const PICKED_DEALS_QUERY = `#graphql
   query CollectionPickedDeals($handle: String!, $country: CountryCode, $language: LanguageCode)
@@ -148,7 +149,7 @@ export async function loadCollectionReviews(
   });
   if (candidates.length === 0) return null;
 
-  const ratings = await yotpo.getProductCardRatings(candidates.map((candidate) => candidate.id));
+  const ratings = await yotpo.getProductCardRatings(candidates.slice(0, REVIEW_CANDIDATES_LIMIT).map((candidate) => candidate.id));
   const reviewed: YotpoCollectionReviewProduct[] = candidates
     .filter((candidate) => (ratings.get(candidate.id)?.count ?? 0) > 0)
     .slice(0, REVIEW_PRODUCTS_LIMIT);

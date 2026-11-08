@@ -9,4 +9,11 @@ build
 
 *.tsbuildinfo
 
+.agents/
+.claude/
+skills-lock.json
 scripts/shopify/.cms.env
+dev.log
+.env.checkout
+
+.env.bicyclebio

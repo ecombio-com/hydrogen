@@ -19,7 +19,18 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
-    frameSrc: ["'self'", 'https://www.youtube-nocookie.com'],
+    frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://js.stripe.com', 'https://*.js.stripe.com', 'https://hooks.stripe.com'],
+    scriptSrc: ["'self'", 'https://cdn.shopify.com', 'https://www.googletagmanager.com', 'https://js.stripe.com', 'https://*.js.stripe.com', 'https://maps.googleapis.com'],
+    connectSrc: [
+      "'self'",
+      'https://www.googletagmanager.com',
+      'https://*.google-analytics.com',
+      'https://*.analytics.google.com',
+      'https://insights.algolia.io',
+      'https://api.stripe.com',
+      'https://maps.googleapis.com',
+    ],
+    imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com', 'https://*.google-analytics.com', 'https://*.stripe.com'],
   });
 
   const body = await renderToReadableStream(
@@ -46,6 +57,8 @@ export default async function handleRequest(
 
   responseHeaders.set('Content-Type', 'text/html');
   responseHeaders.set('Content-Security-Policy', header);
+  responseHeaders.set('X-Content-Type-Options', 'nosniff');
+  responseHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   return new Response(body, {
     headers: responseHeaders,

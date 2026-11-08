@@ -67,17 +67,17 @@ export async function loader(args: Route.LoaderArgs) {
       studies: [],
     };
   }
-  const [cms, showcaseContent, categorySections, shopCategoryItems, homeVideo] = await Promise.all([
+  const [cms, showcase, categorySections, shopCategoryItems, homeVideo] = await Promise.all([
     getHomeCmsContent(storefront, {
       getReviews: (id) =>
         yotpo.getProductReviews(id) as unknown as Promise<{reviews: ReviewLike[]} | null>,
     }),
-    getHomeShowcaseContent(storefront),
+    getHomeShowcaseContent(storefront).then((content) => getShowcaseSection(storefront, content, yotpo)),
     getHomeCategorySections(storefront),
     getHomeShopCategories(storefront),
     getHomeVideo(storefront),
   ]);
-  const showcase = await getShowcaseSection(storefront, showcaseContent, yotpo);
+  // The showcase now loads inside the Promise.all above, so it no longer waits for the other CMS queries.
   return {
     isBicycleBio: false,
     canonicalUrl: getUrls(request).canonical,

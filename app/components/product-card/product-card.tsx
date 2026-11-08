@@ -58,7 +58,7 @@ export function ProductCard({
   const href = getVariantUrl({
     handle: product.handle,
     pathname: '/',
-    searchParams: new URLSearchParams(),
+    searchParams: new URLSearchParams(product.trackingParameters ?? ''),
     selectedOptions: options.filter((o) => o.value !== 'Default Title'),
   });
 

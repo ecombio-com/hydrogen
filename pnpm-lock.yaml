@@ -20,9 +20,15 @@ importers:
       '@fontsource-variable/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@shopify/checkout-kit':
+        specifier: 4.0.0
+        version: 4.0.0
       '@shopify/hydrogen':
         specifier: 2026.4.7
         version: 2026.4.7(@react-router/dev@7.16.0(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(react-router@7.16.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(supports-color@7.2.0)(typescript@5.9.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(yaml@2.9.1))(react-dom@18.3.1(react@18.3.1))(react-router@7.16.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(three@0.183.2)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      '@stripe/stripe-js':
+        specifier: ^10.2.1
+        version: 10.2.1
       '@tailwindcss/typography':
         specifier: ^0.5.20
         version: 0.5.20(tailwindcss@4.3.4)
@@ -1549,6 +1555,10 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
+  '@shopify/checkout-kit@4.0.0':
+    resolution: {integrity: sha512-zl4xhlItpP+vgaYz+JxDSVTJCOeGzfEOoyCo2/YYaVOhjEMjADkFUQ5xCwCBOw3JPbfqz8IheuCOrWBUifGUMA==}
+    engines: {node: '>=22.14.0'}
+
   '@shopify/cli@3.93.2':
     resolution: {integrity: sha512-9za2Sj+48o4C5PPpF8Echph9fSdqDOElL37AyNFiQs0qLwHVEre4mnueDz9LJtyBSRU1rY/WUAgDkPw5WXbB1A==}
     engines: {node: '>=20.10.0'}
@@ -1599,6 +1609,10 @@ packages:
 
   '@shopify/prettier-config@1.1.4':
     resolution: {integrity: sha512-BmM8zRVvtu2eKyZ7HmKqG6lI/U6uiZgs/UK4qLnVmdmx8r5hSL9alMRguuV8MXgDUdt17nWoZKvvUVXF2OAoqA==}
+
+  '@stripe/stripe-js@10.2.1':
+    resolution: {integrity: sha512-diHeR1/FeWZZzuFXEvkjRMzydgKEpxUTrKEUxSV8NcpeZY3Kl8C4Gerw/JSMK+3oXsBRJtgkG7ckviQJ651moA==}
+    engines: {node: '>=12.16'}
 
   '@tailwindcss/node@4.3.4':
     resolution: {integrity: sha512-b7QK/QG04v3j04NbpG82XLCedRyulnkuwUDwRa9oK/ypnJIzMapz2Wg+0TltVczjUzDaJJHIa1+jj9aMUOFMTQ==}
@@ -5809,6 +5823,8 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
+  '@shopify/checkout-kit@4.0.0': {}
+
   '@shopify/cli@3.93.2':
     dependencies:
       '@ast-grep/napi': 0.33.0
@@ -5891,6 +5907,8 @@ snapshots:
   '@shopify/oxygen-workers-types@4.2.0': {}
 
   '@shopify/prettier-config@1.1.4': {}
+
+  '@stripe/stripe-js@10.2.1': {}
 
   '@tailwindcss/node@4.3.4':
     dependencies:

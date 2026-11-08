@@ -130,6 +130,15 @@ export async function loader({context, params, request}: Route.LoaderArgs) {
   const articles = await articlesPromise;
 
   const seo = buildCollectionSeo({request, collection, parent, brandName: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).name});
+  // Send only what the page and meta use. The raw collection also carries every product node and facet, already sent as products/filters.
+  const slimCollection = {
+    id: collection.id,
+    handle: collection.handle,
+    title: collection.title,
+    description: collection.description,
+    seo: collection.seo,
+    image: collection.image,
+  };
 
   return {
     kind: 'standard' as const,
@@ -139,7 +148,7 @@ export async function loader({context, params, request}: Route.LoaderArgs) {
     deals,
     productCount,
     reviews,
-    collection,
+    collection: slimCollection,
     filters: facets,
     pageInfo: collection.products.pageInfo,
     parent,

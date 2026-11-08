@@ -14,6 +14,7 @@ import type {
 } from './types';
 
 const REQUEST_TIMEOUT_MS = 15000;
+const READ_TIMEOUT_MS = 4000;
 
 export type SubmitReviewInput = {
   productId: string;
@@ -81,7 +82,7 @@ export function createYotpoClient(args: {
           `/products/${encodeURIComponent(productId)}/reviews.json?page=${page}&per_page=${perPage}`;
         const res = await fetch(url, {
           headers: {Accept: 'application/json'},
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          signal: AbortSignal.timeout(READ_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Yotpo API ${res.status} ${res.statusText}`);
 

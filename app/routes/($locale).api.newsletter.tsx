@@ -1,3 +1,4 @@
+import {VERSIONS} from '~/lib/versions';
 import type {Route} from './+types/($locale).api.newsletter';
 
 type State = {status: 'idle' | 'success' | 'error'; message?: string};
@@ -67,7 +68,7 @@ export async function action({request, context}: Route.ActionArgs): Promise<Stat
   const shop = env.PUBLIC_STORE_DOMAIN;
   const clientId = env.SHOPIFY_ADMIN_CLIENT_ID;
   const clientSecret = env.SHOPIFY_ADMIN_CLIENT_SECRET;
-  const version = env.SHOPIFY_API_VERSION || '2026-10';
+  const version = VERSIONS.shopifyAdmin;
 
   const form = await request.formData();
   const email = String(form.get('email') ?? '').trim().toLowerCase();
@@ -113,3 +114,5 @@ export async function action({request, context}: Route.ActionArgs): Promise<Stat
     return {status: 'error', message: GENERIC_ERROR};
   }
 }
+
+

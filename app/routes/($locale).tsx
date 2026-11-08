@@ -1,16 +1,10 @@
 import type {LoaderFunctionArgs} from 'react-router';
+import {isEnabledLocale} from '~/lib/i18n';
 
-export async function loader({params, context}: LoaderFunctionArgs) {
-  const {language, country} = context.storefront.i18n;
-
-  if (
-    params.locale &&
-    params.locale.toLowerCase() !== `${language}-${country}`.toLowerCase()
-  ) {
-    // If the locale URL param is defined, yet we are still at the default locale
-    // then the locale param must be invalid, send to the 404 page
+// Unknown or disabled locale prefixes (e.g. /zz-zz) return 404.
+export async function loader({params}: LoaderFunctionArgs) {
+  if (params.locale && !isEnabledLocale(params.locale)) {
     throw new Response(null, {status: 404});
   }
-
   return null;
 }

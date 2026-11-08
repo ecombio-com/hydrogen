@@ -131,10 +131,35 @@ export const PRODUCT_FRAGMENT = `#graphql
         }
       }
     }
+    # Parents three levels deep, so the breadcrumb trail needs no extra requests.
     collections(first: 10) {
       nodes {
         handle
         title
+        parent: metafield(namespace: "custom", key: "parent_collection") {
+          reference {
+            ... on Collection {
+              handle
+              title
+              parent: metafield(namespace: "custom", key: "parent_collection") {
+                reference {
+                  ... on Collection {
+                    handle
+                    title
+                    parent: metafield(namespace: "custom", key: "parent_collection") {
+                      reference {
+                        ... on Collection {
+                          handle
+                          title
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
     trustBadges: metafield(namespace: "custom", key: "trust_badges") {
@@ -182,30 +207,6 @@ export const PRODUCT_FRAGMENT = `#graphql
           }
         }
       }
-    }
-    faq: metafield(namespace: "custom", key: "frequently_asked_questions") {
-      reference {
-        ... on Page {
-          body
-        }
-      }
-    }
-    techSpecs: metafield(namespace: "custom", key: "technical_specifications") {
-      reference {
-        ... on Page {
-          body
-        }
-      }
-    }
-    ownersManual: metafield(namespace: "custom", key: "owners_manual") {
-      reference {
-        ... on GenericFile {
-          url
-        }
-      }
-    }
-    assemblyVideo: metafield(namespace: "custom", key: "assembly_video") {
-      value
     }
     adjacentVariants (selectedOptions: $selectedOptions) {
       ...ProductVariant

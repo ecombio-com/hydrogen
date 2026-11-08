@@ -1,3 +1,4 @@
+import {STOREFRONT_ID} from '~/lib/storefront-id';
 import {redirect} from 'react-router';
 import {getStorefrontConfig} from '~/lib/storefront-config';
 import type {Route} from './+types/($locale).cart.$lines';
@@ -47,7 +48,7 @@ export async function loader({request, context, params}: Route.LoaderArgs) {
   const result = await cart.create({
     lines: linesMap,
     discountCodes: discountArray,
-    attributes: [{key: 'storefront', value: slug}],
+    attributes: [{key: 'storefront_id', value: STOREFRONT_ID}, {key: 'storefront', value: slug}],
   });
 
   const cartResult = result.cart;
@@ -61,14 +62,16 @@ export async function loader({request, context, params}: Route.LoaderArgs) {
   // Update cart id in cookie
   const headers = cart.setCartId(cartResult.id);
 
-  // redirect to checkout
-  if (cartResult.checkoutUrl) {
-    return redirect(cartResult.checkoutUrl, {headers});
-  } else {
-    throw new Error('No checkout URL found');
-  }
+  // redirect to our own checkout (address, payment), not Shopify's hosted one
+  
+  return redirect(cartResult.checkoutUrl, {headers});
 }
 
 export default function Component() {
   return null;
 }
+
+
+
+
+

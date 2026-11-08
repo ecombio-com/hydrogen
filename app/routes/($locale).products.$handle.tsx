@@ -31,6 +31,7 @@ import {SpecCarousel} from '~/components/product-detail/spec-carousel';
 import {StickyBuyBar} from '~/components/product-detail/sticky-buy-bar';
 import {TechnicalSpecsSection} from '~/components/product-detail/technical-specs-section';
 import {getCollectionTrail} from '~/lib/breadcrumb-trail';
+import {loadProductExtras} from '~/lib/product-extras.server';
 import {PRODUCT_QUERY} from '~/lib/product-fragments';
 import {
   getSelectedColorImage,
@@ -46,6 +47,8 @@ import {loadCrossSell} from '~/lib/product-cross-sell';
 import {FrequentlyBoughtTogether} from '~/components/product-detail/frequently-bought-together';
 import {PairsWellWithSection} from '~/components/product-detail/pairs-well-with-section';
 import {RelatedProductsSection} from '~/components/product/related-products-section';
+import {TrackProductView} from '~/@algolia/components/track-product-view';
+import {toPublicAlgoliaConfig} from '~/@algolia/config';
 
 const COPY = {
   specsSubtitle: 'Full details in Technical Specifications below',
@@ -120,7 +123,9 @@ export async function loader(args: Route.LoaderArgs) {
   const productId = criticalData.product.id.split('/').pop() ?? '';
   const reviews = args.context.yotpo.getProductReviews(productId);
   const crossSell = loadCrossSell(args.context.storefront, criticalData.product.handle);
-  return {...deferredData, ...criticalData, reviews, crossSell};
+  const extras = loadProductExtras(args.context.storefront, criticalData.product.handle);
+  const algolia = toPublicAlgoliaConfig(args.context.algolia.config);
+  return {...deferredData, ...criticalData, reviews, crossSell, extras, algolia};
 }
 
 /**
@@ -151,7 +156,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   const origin = new URL(request.url).origin;
   const prefix = getLocaleFromRequest(request).pathPrefix;
-  const trail = await getCollectionTrail(storefront, product.collections.nodes);
+  const trail = getCollectionTrail(product.collections.nodes);
   const crumbs = [
     {name: 'Home', path: '/'},
     ...trail.map((c) => ({name: c.title, path: `/collections/${c.handle}`})),
@@ -177,10 +182,10 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     popularSearches: parsePopularSearches(product.popularSearches),
     trustBadges: parseTrustBadges(product.trustBadges),
     specs: parseSpecs(product.specs),
-    faqBody: product.faq?.reference?.body ?? null,
-    techSpecsBody: product.techSpecs?.reference?.body ?? null,
-    manualUrl: product.ownersManual?.reference?.url ?? null,
-    assemblyVideoUrl: product.assemblyVideo?.value ?? null,
+
+
+
+
   };
 }
 
@@ -199,14 +204,16 @@ export default function Product() {
     breadcrumbs,
     delivery,
     popularSearches,
-    faqBody,
-    techSpecsBody,
-    manualUrl,
-    assemblyVideoUrl,
+
+
+
+
     trustBadges,
     specs,
     crossSell,
+    extras,
     reviews,
+    algolia,
   } = useLoaderData<typeof loader>();
 
   const selectedVariant = useOptimisticVariant(
@@ -273,7 +280,7 @@ export default function Product() {
                   ) : null}
                   <div className="mt-ds-xsmall min-h-5">
                     <Suspense fallback={<div className="h-5" aria-hidden />}>
-                      <Await resolve={reviews}>
+                      <Await resolve={reviews} errorElement={<></>}>
                         {(data) => (
                           <StarRating
                             summary={
@@ -335,7 +342,7 @@ export default function Product() {
 
           {product.isGiftCard ? null : (
             <Suspense fallback={null}>
-              <Await resolve={crossSell}>
+              <Await resolve={crossSell} errorElement={<></>}>
                 {(data) => (
                   <>
                     {data.frequentlyBought.length > 0 && selectedVariant?.availableForSale ? (
@@ -359,7 +366,7 @@ export default function Product() {
           )}
           <div id="reviews" className="scroll-mt-24">
             <Suspense fallback={<div className="min-h-64" aria-hidden />}>
-              <Await resolve={reviews}>
+              <Await resolve={reviews} errorElement={<></>}>
                 {(data) => (
                   <ProductReviews
                     data={data}
@@ -370,10 +377,10 @@ export default function Product() {
               </Await>
             </Suspense>
           </div>
-          <FrequentlyAskedQuestionsSection html={faqBody} />
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <FrequentlyAskedQuestionsSection html={x.faqBody} />}</Await></Suspense>
           <PopularSearches terms={popularSearches} />
-          <TechnicalSpecsSection html={techSpecsBody} />
-          <ProductResources manualUrl={manualUrl} videoUrl={assemblyVideoUrl} />
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <TechnicalSpecsSection html={x.techSpecsBody} />}</Await></Suspense>
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <ProductResources manualUrl={x.manualUrl} videoUrl={x.assemblyVideoUrl} />}</Await></Suspense>
         </Sections>
       </Container>
 
@@ -386,6 +393,7 @@ export default function Product() {
           price={selectedVariant?.price ? <Money data={selectedVariant.price} /> : null}
         />
       )}
+      <TrackProductView config={algolia} productId={product.id} />
       <Analytics.ProductView
         data={{
           products: [

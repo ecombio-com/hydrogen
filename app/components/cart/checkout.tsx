@@ -34,7 +34,7 @@ export function CartCheckout({checkoutUrl, hasLines}: {checkoutUrl?: string; has
 
   return (
     <a
-      href={checkoutUrl}
+      href="/address"
       aria-label={COPY.checkoutLabel}
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
@@ -46,3 +46,5 @@ export function CartCheckout({checkoutUrl, hasLines}: {checkoutUrl?: string; has
     </a>
   );
 }
+
+

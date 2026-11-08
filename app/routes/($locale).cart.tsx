@@ -1,4 +1,4 @@
-import {CartForm, useOptimisticCart, type CartQueryDataReturn} from '@shopify/hydrogen';
+import {Analytics, CartForm, useOptimisticCart, type CartQueryDataReturn} from '@shopify/hydrogen';
 import {cn} from 'cn';
 import {data, useLoaderData, type HeadersFunction} from 'react-router';
 import type {Route} from './+types/($locale).cart';
@@ -144,6 +144,7 @@ export default function Cart() {
 
   return (
     <Page className="bg-muted pb-10">
+      <Analytics.CartView />
       <Container>
         <div className="grid gap-5">
           <div className="flex items-center gap-2.5">

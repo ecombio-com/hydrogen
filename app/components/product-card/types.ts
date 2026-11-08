@@ -27,4 +27,5 @@ export type ProductCardData = {
   rating?: {score: number; count: number} | null;
   cardSpecs?: string[];
   label?: string | null;
+  trackingParameters?: string | null;
 };

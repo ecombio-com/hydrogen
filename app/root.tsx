@@ -20,7 +20,10 @@ import {ErrorBoundaryContent} from '~/components/error/error-boundary-content';
 import {PageLayout} from './components/PageLayout';
 import {LocaleProvider} from '~/components/ui/locale-context';
 import {SiteSchema} from '~/components/schema/site-schema';
+import {Ga4Tag, Ga4Subscriber} from '~/components/analytics/ga4';
+import {ConsentBanner} from '~/components/analytics/consent-banner';
 import {getAnnouncementBar, isAnnouncementDismissed} from '~/lib/announcements.server';
+import {DEFAULT_LOCALE, getLocaleFromRequest} from '~/lib/i18n';
 
 export type RootLoader = typeof loader;
 
@@ -86,7 +89,8 @@ export async function loader(args: Route.LoaderArgs) {
     brand: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).brand,
     brandName: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).name,
     origin: new URL(args.request.url).origin,
-    locale: `${storefront.i18n.language}-${storefront.i18n.country}`.toLowerCase(),
+    gaId: env.GA_MEASUREMENT_ID,
+    locale: getLocaleFromRequest(args.request).pathPrefix.slice(1),
     shop: getShopAnalytics({
       storefront,
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
@@ -154,7 +158,7 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 export function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
   const rootData = useRouteLoaderData<RootLoader>('root');
-  const lang = rootData?.locale.split('-')[0] ?? 'en';
+  const lang = rootData?.locale ?? DEFAULT_LOCALE;
   const brand = rootData?.brand ?? 'ecombio';
 
   return (
@@ -162,11 +166,13 @@ export function Layout({children}: {children?: React.ReactNode}) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="impact-site-verification" content="a5ccd416-8951-44c3-8ad0-5eeedf00f9f0" {...{value: 'a5ccd416-8951-44c3-8ad0-5eeedf00f9f0'}} />
         <link rel="stylesheet" href={tailwindCss}></link>
         <link rel="stylesheet" href={appStyles}></link>
         <Meta />
         <Links />
         {rootData?.origin ? <SiteSchema origin={rootData.origin} /> : null}
+        {rootData?.gaId ? <Ga4Tag id={rootData.gaId} nonce={nonce} /> : null}
       </head>
       <body>
         {children}
@@ -190,6 +196,8 @@ export default function App() {
       shop={data.shop}
       consent={data.consent}
     >
+      <Ga4Subscriber />
+      <ConsentBanner />
       <LocaleProvider locale={data.locale}>
       <PageLayout {...data}>
         <Outlet />

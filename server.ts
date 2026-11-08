@@ -3,17 +3,63 @@ import {createRequestHandler, storefrontRedirect} from '@shopify/hydrogen';
 import {createHydrogenRouterContext} from '~/lib/context';
 import {localeRedirect} from '~/lib/i18n';
 
-/**
- * Export a fetch handler in module format.
- */
+const HOOKS_HOST = 'hooks.ecombio.com';
+// Paths that webhook, revalidate and cron callers use on the hooks host.
+const HOOKS_ALLOWED_PREFIXES = [
+  '/api/webhooks',
+  '/api/revalidate-menus',
+  '/api/revalidate-product',
+  '/api/cron',
+  '/api/yotpo/webhook',
+];
+
+function notFound(): Response {
+  return new Response('Not Found', {
+    status: 404,
+    headers: {'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex'},
+  });
+}
+
 export default {
   async fetch(
     request: Request,
     env: Env,
     executionContext: ExecutionContext,
   ): Promise<Response> {
-    const localeResponse = localeRedirect(request);
-    if (localeResponse) return localeResponse;
+    const url = new URL(request.url);
+    const {pathname} = url;
+
+    // The hooks host serves only webhook paths, never the store.
+    const onHooksHost = url.hostname.toLowerCase() === HOOKS_HOST;
+    if (
+      onHooksHost &&
+      !HOOKS_ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+    ) {
+      return notFound();
+    }
+
+    // Hydrogen's well-known proxy does not include UCP yet.
+    if (pathname === '/.well-known/ucp') {
+      return fetch(`https://${env.PUBLIC_STORE_DOMAIN}/.well-known/ucp`, {
+        headers: {Accept: request.headers.get('Accept') ?? '*/*'},
+      });
+    }
+
+    if (!onHooksHost) {
+      const localeResponse = localeRedirect(request);
+      if (localeResponse) return localeResponse;
+    }
+
+    // Author URLs are lowercase.
+    const author = pathname.match(/^(\/[a-z]{2}-[a-z]{2})?\/blogs\/author\/([^/]+)\/?$/);
+    if (author && author[2] !== author[2].toLowerCase()) {
+      return new Response(null, {
+        status: 308,
+        headers: {
+          Location: `${author[1] ?? ''}/blogs/author/${author[2].toLowerCase()}${url.search}`,
+        },
+      });
+    }
 
     try {
       const hydrogenContext = await createHydrogenRouterContext(
@@ -22,10 +68,6 @@ export default {
         executionContext,
       );
 
-      /**
-       * Create a Hydrogen request handler that internally
-       * delegates to React Router for routing and rendering.
-       */
       const handleRequest = createRequestHandler({
         build: serverBuild,
         mode: process.env.NODE_ENV,
@@ -35,18 +77,11 @@ export default {
       const response = await handleRequest(request);
 
       if (hydrogenContext.session.isPending) {
-        response.headers.set(
-          'Set-Cookie',
-          await hydrogenContext.session.commit(),
-        );
+        response.headers.set('Set-Cookie', await hydrogenContext.session.commit());
       }
 
+      // Shopify URL redirects run only when the app has no page for the URL.
       if (response.status === 404) {
-        /**
-         * Check for redirects only when there's a 404 from the app.
-         * If the redirect doesn't exist, then `storefrontRedirect`
-         * will pass through the 404 response.
-         */
         return storefrontRedirect({
           request,
           response,

@@ -6,6 +6,7 @@ import type {AlgoliaInsightsEvent} from './types';
 // stay silent until that API has loaded on the page.
 
 const TOKEN_KEY = 'algolia-user-token';
+let memoryToken: string | undefined;
 
 type PrivacyWindow = {
   Shopify?: {
@@ -29,7 +30,8 @@ function userToken(): string {
     }
     return t;
   } catch {
-    return 'anonymous';
+    memoryToken ??= crypto.randomUUID();
+    return memoryToken;
   }
 }
 

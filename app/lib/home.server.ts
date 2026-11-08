@@ -68,7 +68,8 @@ function toPath(url?: string | null): string | undefined {
   if (!url) return undefined;
   try {
     const u = new URL(url);
-    return u.hostname.endsWith('ecombio.com') ? u.pathname + u.search : url;
+    const h = u.hostname.toLowerCase();
+    return h === 'ecombio.com' || h.endsWith('.ecombio.com') ? u.pathname + u.search : url;
   } catch {
     return url;
   }
@@ -215,7 +216,7 @@ export async function getHomeCmsContent(
     const out: HomeCmsContent = {};
 
     const slides = sorted(data.slides?.nodes).flatMap((n) => {
-      const f = toMap(n);
+      const f = toMap(n); if (!inWindow(f)) return [];
       const image = pick(f, 'image')?.reference?.image?.url;
       const href = toPath(pick(f, 'link', 'url')?.value);
       const alt = pick(f, 'alt', 'alt_text')?.value;
@@ -237,7 +238,7 @@ export async function getHomeCmsContent(
     if (slides.length > 0) out.slides = slides;
 
     const stories = sorted(data.stories?.nodes).flatMap((n) => {
-      const f = toMap(n);
+      const f = toMap(n); if (!inWindow(f)) return [];
       const ref = pick(f, 'video')?.reference;
       const video = bestSource(ref?.sources ?? [])?.url ?? ref?.url ?? undefined;
       const alt = pick(f, 'alt', 'alt_text')?.value;

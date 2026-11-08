@@ -195,7 +195,7 @@ async function browseSearch({
     },
   });
   const products = search.nodes.flatMap((node) =>
-    node.__typename === 'Product' ? [toProductCardData(node)] : [],
+    node.__typename === 'Product' ? [{...toProductCardData(node), trackingParameters: node.trackingParameters}] : [],
   );
   const transformed = transformShopifyFilters(search.productFilters, {
     activeFilters: filters,
@@ -349,6 +349,7 @@ const SEARCH_BROWSE_QUERY = `#graphql
         __typename
         ... on Product {
           ...ProductCardItem
+          trackingParameters
         }
       }
       pageInfo {
