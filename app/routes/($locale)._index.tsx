@@ -120,7 +120,7 @@ function EcombioHome() {
           </Container>
         ) : null}
 
-        {categorySections.map((section) => (
+        {categorySections.map((section: any) => (
           <Container key={section.id}>
             <PopularCategories title={section.title} subtitle={section.subtitle} items={section.items} />
           </Container>
