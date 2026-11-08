@@ -1,3 +1,5 @@
+import {useEffect, useState} from 'react';
+import {useLocation} from 'react-router';
 import type {CartApiQueryFragment, HeaderQuery} from 'storefrontapi.generated';
 import {AccountLink, CartToggle} from '~/components/Header';
 import {Container} from '~/components/ui/container';
@@ -19,6 +21,7 @@ interface BicycleBioHeaderProps {
 }
 
 const BRAND_NAME = 'BicycleBio';
+const HOME_PATH = /^\/([a-z]{2}(-[a-z]{2})?)?\/?$/i;
 
 const FALLBACK_ITEMS: MenuItem[] = [
   {id: 'bb-nav-shop', title: 'E-Bikes', url: '/collections/electric-bikes', image: null, items: []},
@@ -26,12 +29,28 @@ const FALLBACK_ITEMS: MenuItem[] = [
 
 export function BicycleBioHeaderGym({header, isLoggedIn, cart, publicStoreDomain}: BicycleBioHeaderProps) {
   const {shop, menu} = header;
+  const {pathname} = useLocation();
+  const isHome = HOME_PATH.test(pathname);
+  const [scrolled, setScrolled] = useState(false);
+  const [engaged, setEngaged] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, {passive: true});
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [pathname]);
+
   const parsed = parseNavMenu(
     (menu?.items ?? []) as unknown as RawMenuItem[],
     publicStoreDomain,
     shop.primaryDomain.url,
   );
   const navItems = parsed.length > 0 ? parsed : FALLBACK_ITEMS;
+
+  // Transparent only at the very top of the home page, and not while hovered or focused.
+  const clear = isHome && !scrolled && !engaged;
+
   return (
     <>
       <a
@@ -42,12 +61,22 @@ export function BicycleBioHeaderGym({header, isLoggedIn, cart, publicStoreDomain
       </a>
       <header
         id="nav-outer"
-        className="sticky top-0 z-30 w-full border-b border-border-subtle bg-background pt-[env(safe-area-inset-top,0px)]"
+        onMouseEnter={() => setEngaged(true)}
+        onMouseLeave={() => setEngaged(false)}
+        onFocusCapture={() => setEngaged(true)}
+        onBlurCapture={() => setEngaged(false)}
+        style={clear ? {backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0))'} : undefined}
+        className={[
+          'sticky top-0 z-30 w-full border-b pt-[env(safe-area-inset-top,0px)] transition-colors duration-200',
+          isHome ? '-mb-[57px] md:-mb-[65px]' : '',
+          clear
+            ? 'border-transparent bg-transparent text-white [--color-foreground:#fff] [--foreground:#fff]'
+            : 'border-border-subtle bg-background',
+        ].join(' ')}
       >
         <NavScrollBehavior />
         <NavHeightSync />
 
-        {/* One row: nav left | wordmark center | icons right */}
         <Container className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-4 md:h-16">
           <div className="flex items-center">
             <div className="md:hidden">
