@@ -3,6 +3,7 @@ import type {Route} from './+types/($locale).collections._index';
 import {getPaginationVariables, Image} from '@shopify/hydrogen';
 import type {CollectionFragment} from 'storefrontapi.generated';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
+import {getStorefrontConfig, isOtherBrandHandle} from '~/lib/storefront-config';
 
 export async function loader(args: Route.LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
@@ -30,7 +31,13 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     // Add other queries here, so that they are loaded in parallel
   ]);
 
-  return {collections};
+  const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+  return {
+    collections: {
+      ...collections,
+      nodes: collections.nodes.filter((c) => !isOtherBrandHandle(c.handle, slug)),
+    },
+  };
 }
 
 /**

@@ -30,10 +30,12 @@ import {buildCollectionSeo} from '~/lib/collection-seo';
 import {PRODUCT_CARD_FRAGMENT} from '~/lib/product-card';
 import {withRatings} from '~/lib/ratings.server';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import {brandNameFromMatches} from '~/lib/brand-meta';
+import {getStorefrontConfig, isOtherBrandHandle} from '~/lib/storefront-config';
 
 const TRUST = ['1-year warranty', 'Free standard shipping', 'Free 30-day returns', 'Friendly support'];
 
-export const meta: Route.MetaFunction = ({data}) => {
+export const meta: Route.MetaFunction = ({data, matches}) => {
   const collection = data?.collection;
   if (!collection) return [{title: 'Collection not found'}];
   const title = collection.seo?.title || collection.title;
@@ -44,7 +46,7 @@ export const meta: Route.MetaFunction = ({data}) => {
     {name: 'description', content: description},
     {tagName: 'link', rel: 'canonical', href: data.canonicalUrl},
     {property: 'og:type', content: 'website'},
-    {property: 'og:site_name', content: 'Ecombio'},
+    {property: 'og:site_name', content: brandNameFromMatches(matches)},
     {property: 'og:title', content: title},
     {property: 'og:description', content: description},
     {property: 'og:url', content: data.canonicalUrl},
@@ -60,6 +62,11 @@ export const meta: Route.MetaFunction = ({data}) => {
 export async function loader({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
   if (!handle) throw redirect('/collections');
+
+  // Subsidiary collections (e.g. scooterbio-all) only exist on their own storefront.
+  if (isOtherBrandHandle(handle, getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug)) {
+    throw new Response(`Collection ${handle} not found`, {status: 404});
+  }
 
   // custom.layout = hub selects the parent-category layout. A failed lookup falls back to the standard page.
   const layout = await getCollectionLayout(context.storefront, handle).catch(
@@ -77,7 +84,7 @@ export async function loader({context, params, request}: Route.LoaderArgs) {
     const hub = await loadHub(context, handle);
     if (!hub) throw new Response(`Collection ${handle} not found`, {status: 404});
     redirectIfHandleIsLocalized(request, {handle, data: hub.collection});
-    const seo = buildCollectionSeo({request, collection: hub.collection});
+    const seo = buildCollectionSeo({request, collection: hub.collection, brandName: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).name});
     return {kind: 'hub' as const, ...hub, ...seo, deals, reviews};
   }
 
@@ -122,7 +129,7 @@ export async function loader({context, params, request}: Route.LoaderArgs) {
   const productCount = availability?.values.reduce((sum, value) => sum + value.count, 0) ?? 0;
   const articles = await articlesPromise;
 
-  const seo = buildCollectionSeo({request, collection, parent});
+  const seo = buildCollectionSeo({request, collection, parent, brandName: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).name});
 
   return {
     kind: 'standard' as const,

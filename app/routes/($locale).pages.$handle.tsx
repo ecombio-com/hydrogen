@@ -4,6 +4,7 @@ import type {Route} from './+types/($locale).pages.$handle';
 import {PageBlocks} from '~/components/content/page-blocks';
 import {RichTextPage} from '~/components/content/rich-text-page';
 import {isHiddenPageHandle} from '~/lib/hidden-pages';
+import {getStorefrontConfig, isOtherBrandHandle} from '~/lib/storefront-config';
 import {pageBlocksFromBody, parsePageBlocks} from '~/lib/page-blocks';
 
 export const meta: Route.MetaFunction = ({data}) =>
@@ -17,7 +18,11 @@ export const meta: Route.MetaFunction = ({data}) =>
 
 export async function loader({context, params, request}: Route.LoaderArgs) {
   const {handle} = params;
-  if (!handle || isHiddenPageHandle(handle)) {
+  if (
+    !handle ||
+    isHiddenPageHandle(handle) ||
+    isOtherBrandHandle(handle, getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug)
+  ) {
     throw new Response('Not Found', {status: 404});
   }
 

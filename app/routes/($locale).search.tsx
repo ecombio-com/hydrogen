@@ -37,6 +37,8 @@ import {
   type RegularSearchReturn,
 } from '~/lib/search';
 import {parseAlgoliaCursor, searchViaAlgolia} from '~/lib/search-algolia.server';
+import {isHiddenPageHandle} from '~/lib/hidden-pages';
+import {getStorefrontConfig, isOtherBrandHandle} from '~/lib/storefront-config';
 
 export const meta: Route.MetaFunction = ({data}) => {
   const term = data?.type === 'browse' ? data.term : '';
@@ -103,7 +105,13 @@ async function browseSearch({
   const {storefront, algolia} = context;
   const url = new URL(request.url);
   const term = (url.searchParams.get('q') ?? '').trim();
-  const collection = url.searchParams.get('collection') || undefined;
+  const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+  const requestedCollection = url.searchParams.get('collection') || undefined;
+  // Another brand's collection scope is ignored on this storefront.
+  const collection =
+    requestedCollection && !isOtherBrandHandle(requestedCollection, slug)
+      ? requestedCollection
+      : undefined;
   const cursor = url.searchParams.get('cursor') || undefined;
   const {filters, sortBy} = parseBrowseParams(url.searchParams);
   const query = buildSearchQuery(term, collection);
@@ -547,7 +555,19 @@ export async function regularSearch({
     ? errors.map(({message}: {message: string}) => message).join(', ')
     : undefined;
 
-  return {type: 'regular', term, error, result: {total, items}};
+  const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+  const pageNodes = items.pages.nodes.filter(
+    (node) =>
+      !('handle' in node) ||
+      (!isHiddenPageHandle(String(node.handle)) && !isOtherBrandHandle(String(node.handle), slug)),
+  );
+  const removed = items.pages.nodes.length - pageNodes.length;
+  return {
+    type: 'regular',
+    term,
+    error,
+    result: {total: total - removed, items: {...items, pages: {...items.pages, nodes: pageNodes}}},
+  };
 }
 
 /**
@@ -722,5 +742,16 @@ async function predictiveSearch({
     0,
   );
 
-  return {type, term, result: {items, total}};
+  const {slug} = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID);
+  const collections = items.collections.filter((c) => !isOtherBrandHandle(c.handle, slug));
+  const pages = items.pages.filter(
+    (p) => !isHiddenPageHandle(p.handle) && !isOtherBrandHandle(p.handle, slug),
+  );
+  const removed =
+    items.collections.length - collections.length + (items.pages.length - pages.length);
+  return {
+    type,
+    term,
+    result: {items: {...items, collections, pages}, total: total - removed},
+  };
 }

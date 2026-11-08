@@ -5,17 +5,19 @@ import {getLocaleFromRequest} from '~/lib/i18n';
 export function buildCollectionSeo({
   collection,
   parent,
+  brandName = 'Ecombio',
   request,
 }: {
   collection: {handle: string; title: string; description: string; updatedAt: string};
   parent?: {handle: string; title: string} | null;
+  brandName?: string;
   request: Request;
 }) {
   const url = new URL(request.url);
   const prefix = getLocaleFromRequest(request).pathPrefix;
   const abs = (path: string) => `${url.origin}${prefix}${path === '/' ? '' : path}`;
   const crumbs = [
-    {name: 'Ecombio', path: '/'},
+    {name: brandName, path: '/'},
     ...(parent ? [{name: parent.title, path: `/collections/${parent.handle}`}] : []),
     {name: collection.title, path: `/collections/${collection.handle}`},
   ];

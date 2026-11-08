@@ -2841,6 +2841,18 @@ export type PageQuery = {
   >;
 };
 
+export type BrandPolicyPageQueryVariables = StorefrontAPI.Exact<{
+  handle: StorefrontAPI.Scalars['String']['input'];
+  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
+  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
+}>;
+
+export type BrandPolicyPageQuery = {
+  page?: StorefrontAPI.Maybe<
+    Pick<StorefrontAPI.Page, 'handle' | 'title' | 'body'>
+  >;
+};
+
 export type ShopPolicyFieldsFragment = Pick<
   StorefrontAPI.ShopPolicy,
   'body' | 'handle' | 'title'
@@ -2875,6 +2887,24 @@ export type ShopPoliciesQuery = {
       Pick<StorefrontAPI.ShopPolicy, 'body' | 'handle' | 'title'>
     >;
   };
+};
+
+export type BrandPolicyPagesQueryVariables = StorefrontAPI.Exact<{
+  privacy: StorefrontAPI.Scalars['String']['input'];
+  refund: StorefrontAPI.Scalars['String']['input'];
+  shipping: StorefrontAPI.Scalars['String']['input'];
+  terms: StorefrontAPI.Scalars['String']['input'];
+  subscription: StorefrontAPI.Scalars['String']['input'];
+  country?: StorefrontAPI.InputMaybe<StorefrontAPI.CountryCode>;
+  language?: StorefrontAPI.InputMaybe<StorefrontAPI.LanguageCode>;
+}>;
+
+export type BrandPolicyPagesQuery = {
+  privacy?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Page, 'id' | 'title'>>;
+  refund?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Page, 'id' | 'title'>>;
+  shipping?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Page, 'id' | 'title'>>;
+  terms?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Page, 'id' | 'title'>>;
+  subscription?: StorefrontAPI.Maybe<Pick<StorefrontAPI.Page, 'id' | 'title'>>;
 };
 
 export type PolicyItemFragment = Pick<
@@ -3416,9 +3446,17 @@ interface GeneratedQueryTypes {
     return: PageQuery;
     variables: PageQueryVariables;
   };
+  '#graphql\n  query BrandPolicyPage($handle: String!, $country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    page(handle: $handle) {\n      handle\n      title\n      body\n    }\n  }\n': {
+    return: BrandPolicyPageQuery;
+    variables: BrandPolicyPageQueryVariables;
+  };
   '#graphql\n  fragment ShopPolicyFields on ShopPolicy {\n    body\n    handle\n    title\n  }\n  query ShopPolicies($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    shop {\n      contactInformation { ...ShopPolicyFields }\n      legalNotice { ...ShopPolicyFields }\n      privacyPolicy { ...ShopPolicyFields }\n      refundPolicy { ...ShopPolicyFields }\n      shippingPolicy { ...ShopPolicyFields }\n      termsOfSale { ...ShopPolicyFields }\n      termsOfService { ...ShopPolicyFields }\n    }\n  }\n': {
     return: ShopPoliciesQuery;
     variables: ShopPoliciesQueryVariables;
+  };
+  '#graphql\n  query BrandPolicyPages(\n    $privacy: String!\n    $refund: String!\n    $shipping: String!\n    $terms: String!\n    $subscription: String!\n    $country: CountryCode\n    $language: LanguageCode\n  ) @inContext(country: $country, language: $language) {\n    privacy: page(handle: $privacy) { id title }\n    refund: page(handle: $refund) { id title }\n    shipping: page(handle: $shipping) { id title }\n    terms: page(handle: $terms) { id title }\n    subscription: page(handle: $subscription) { id title }\n  }\n': {
+    return: BrandPolicyPagesQuery;
+    variables: BrandPolicyPagesQueryVariables;
   };
   '#graphql\n  fragment PolicyItem on ShopPolicy {\n    id\n    title\n    handle\n  }\n  query Policies ($country: CountryCode, $language: LanguageCode)\n    @inContext(country: $country, language: $language) {\n    shop {\n      privacyPolicy {\n        ...PolicyItem\n      }\n      shippingPolicy {\n        ...PolicyItem\n      }\n      termsOfService {\n        ...PolicyItem\n      }\n      refundPolicy {\n        ...PolicyItem\n      }\n      subscriptionPolicy {\n        id\n        title\n        handle\n      }\n    }\n  }\n': {
     return: PoliciesQuery;

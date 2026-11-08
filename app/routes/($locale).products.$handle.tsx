@@ -4,6 +4,8 @@ import {ProductReviews, StarRating} from '~/@yotpo';
 import {Money} from '@shopify/hydrogen';
 import {DeliveryEstimate} from '~/components/product-detail/delivery-estimate';
 import type {Route} from './+types/($locale).products.$handle';
+import {brandNameFromMatches} from '~/lib/brand-meta';
+import {getStorefrontConfig as getBrandConfig} from '~/lib/storefront-config';
 import {
   getSelectedProductOptions,
   Analytics,
@@ -51,7 +53,7 @@ const COPY = {
 
 export const links = () => [{rel: 'stylesheet', href: specsCss}];
 
-export const meta: Route.MetaFunction = ({data}) => {
+export const meta: Route.MetaFunction = ({data, matches}) => {
   const product = data?.product;
   if (!product) return [{title: 'Product not found'}];
   const title = product.seo?.title || product.title;
@@ -65,7 +67,7 @@ export const meta: Route.MetaFunction = ({data}) => {
     {name: 'description', content: description},
     {tagName: 'link', rel: 'canonical', href: url},
     {property: 'og:type', content: 'product'},
-    {property: 'og:site_name', content: 'Ecombio'},
+    {property: 'og:site_name', content: brandNameFromMatches(matches)},
     {property: 'og:title', content: title},
     {property: 'og:description', content: description},
     {property: 'og:url', content: url},
@@ -164,7 +166,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     breadcrumbLd: {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
-      itemListElement: [{name: 'Ecombio', path: '/'}, ...crumbs.slice(1)].map((c, i) => ({
+      itemListElement: [{name: getBrandConfig(context.env.PUBLIC_STOREFRONT_ID).name, path: '/'}, ...crumbs.slice(1)].map((c, i) => ({
         '@type': 'ListItem',
         position: i + 1,
         name: c.name,
