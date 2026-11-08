@@ -85,15 +85,15 @@ export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: 
             </LocalizedLink>
           </div>
 
-          <div className="hidden justify-center md:flex">
+          <div className="hidden justify-center font-semibold md:flex [&_a]:font-semibold [&_button]:font-semibold">
             <QuickLinks items={navItems} />
           </div>
 
           <div className="ml-auto flex items-center justify-end gap-4 md:ml-0">
-            <div className="order-last w-full md:order-none md:w-52">
+            <div className="order-last w-full md:order-none md:w-44 lg:w-60">
               <SearchModal />
             </div>
-            <AccountLink isLoggedIn={isLoggedIn} />
+            <div className="[&_span[aria-hidden=true]]:hidden"><AccountLink isLoggedIn={isLoggedIn} /></div>
             <CartToggle cart={cart} />
           </div>
         </Container>
