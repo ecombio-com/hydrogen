@@ -168,7 +168,7 @@ export function Header({announcementBar, header, isLoggedIn, cart, publicStoreDo
 }
 
 // Sign-in is a plain <a>: a full document navigation that is never prefetched (it ends in an OAuth redirect).
-function AccountLink({isLoggedIn}: Pick<HeaderProps, 'isLoggedIn'>) {
+export function AccountLink({isLoggedIn}: Pick<HeaderProps, 'isLoggedIn'>) {
   const locale = useUrlLocale();
   const prefix = locale ? `/${locale}` : '';
   const cls = 'inline-flex items-center gap-1.5 text-ds-regular font-medium hover:opacity-70';
@@ -241,7 +241,7 @@ function CartBadge({count}: {count: number}) {
   );
 }
 
-function CartToggle({cart}: Pick<HeaderProps, 'cart'>) {
+export function CartToggle({cart}: Pick<HeaderProps, 'cart'>) {
   return (
     <Suspense fallback={<CartBadge count={0} />}>
       <Await resolve={cart}>

@@ -5,12 +5,14 @@ import type {
 } from 'storefrontapi.generated';
 import {Aside} from '~/components/Aside';
 import {CartDrawer} from '~/components/cart/cart-drawer';
-import {Footer} from '~/components/Footer';
-import {Header} from '~/components/Header';
+import {getBrandLayout} from '~/brands/layouts';
+import type {BrandId} from '~/brands/registry';
+
 import type {AnnouncementBarData} from '~/lib/announcements';
 
 interface PageLayoutProps {
   announcementBar: AnnouncementBarData | null;
+  brand?: BrandId;
   cart: Promise<CartApiQueryFragment | null>;
   footer: Promise<FooterQuery | null>;
   header: HeaderQuery;
@@ -21,6 +23,7 @@ interface PageLayoutProps {
 
 export function PageLayout({
   announcementBar,
+  brand,
   cart,
   children = null,
   footer,
@@ -28,6 +31,7 @@ export function PageLayout({
   isLoggedIn,
   publicStoreDomain,
 }: PageLayoutProps) {
+  const {Header, Footer} = getBrandLayout(brand);
   return (
     <Aside.Provider>
       <CartDrawer cart={cart} />
