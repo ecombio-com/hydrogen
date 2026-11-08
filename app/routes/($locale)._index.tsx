@@ -1,5 +1,5 @@
 // Path: app/routes/($locale)._index.tsx
-import {redirect, useLoaderData} from 'react-router';
+import {useLoaderData} from 'react-router';
 import type {Route} from './+types/($locale)._index';
 import {CategoryCarousel} from '~/components/home/category-carousel';
 import {FeatureSplit} from '~/components/home/feature-split';
@@ -17,6 +17,7 @@ import {buildMeta} from '~/lib/blog';
 import {getUrls} from '~/lib/blog.server';
 import {BicycleBioHome} from '~/components/home/BicycleBioHome';
 import {getStorefrontConfig} from '~/lib/storefront-config';
+import CollectionRoute, {loader as collectionLoader} from './($locale).collections.$handle';
 import {communityStories, heroSlides, shopCategories} from '~/lib/home';
 import {getShowcaseSection} from '~/lib/home-showcase.server';
 import {
@@ -35,14 +36,22 @@ const DESCRIPTION =
   'Shop electric bikes, scooters and skateboards from top brands, with free shipping and a 1-year warranty.';
 
 export const meta: Route.MetaFunction = ({data}) =>
+  (data as any)?.isBrandHome
+    ? buildMeta({description: (data as any)?.collection?.description ?? '', title: (data as any)?.collection?.title ?? '', url: '/'})
+    :
   data?.isBicycleBio
     ? buildMeta({description: BB_DESCRIPTION, title: BB_TITLE, url: data.canonicalUrl ?? '/'})
     : buildMeta({description: DESCRIPTION, title: TITLE, url: data?.canonicalUrl ?? '/'});
 
-export async function loader({context, request}: Route.LoaderArgs) {
+export async function loader(args: Route.LoaderArgs) {
+  const {context, request} = args;
   const {storefront, yotpo} = context;
   const homeCollection = getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).homeCollectionHandle;
-  if (homeCollection) throw redirect(`/collections/${homeCollection}`);
+  if (homeCollection) {
+    const res: any = await collectionLoader({...args, params: {...args.params, handle: homeCollection}} as any);
+    const payload = res && typeof res === 'object' && 'data' in res && 'init' in res ? res.data : res;
+    return {...payload, isBrandHome: true} as any;
+  }
   if (getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).brand === 'bicyclebio') {
     const canonical = getUrls(request).canonical;
     return {
@@ -84,6 +93,7 @@ export async function loader({context, request}: Route.LoaderArgs) {
 
 export default function HomeRoute() {
   const data = useLoaderData<typeof loader>();
+  if ((data as any).isBrandHome) return <CollectionRoute {...({loaderData: data} as any)} />;
   return data.isBicycleBio ? <BicycleBioHome /> : <EcombioHome />;
 }
 
