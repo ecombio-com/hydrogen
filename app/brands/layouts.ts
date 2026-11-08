@@ -14,7 +14,7 @@ export type BrandLayout = {
 const ECOMBIO_LAYOUT: BrandLayout = {Header, Footer};
 
 // BicycleBio header style: 'nike' (strip, centered nav, search pill) or 'gym' (nav left, wordmark center, icons right)
-const BICYCLEBIO_HEADER_STYLE: 'nike' | 'gym' = 'gym';
+const BICYCLEBIO_HEADER_STYLE = 'nike' as 'nike' | 'gym';
 
 export const BRAND_LAYOUTS: Record<BrandId, BrandLayout> = {
   ecombio: ECOMBIO_LAYOUT,

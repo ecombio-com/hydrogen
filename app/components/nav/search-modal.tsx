@@ -128,7 +128,7 @@ function saveRecent(term: string) {
 
 /* ---------- Header search ---------- */
 
-export function SearchModal() {
+export function SearchModal({staticPlaceholder = false}: {staticPlaceholder?: boolean} = {}) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
@@ -151,7 +151,7 @@ export function SearchModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <SearchTrigger term={currentTerm} />
+      <SearchTrigger term={currentTerm} staticPlaceholder={staticPlaceholder} />
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-60 transition-opacity duration-200 data-starting-style:opacity-0 data-ending-style:opacity-0 md:bg-scrim md:backdrop-blur-(--scrim-blur)" />
         <DialogPrimitive.Popup
@@ -170,17 +170,17 @@ export function SearchModal() {
   );
 }
 
-function SearchTrigger({term}: {term: string}) {
+function SearchTrigger({term, staticPlaceholder}: {term: string; staticPlaceholder?: boolean}) {
   return (
     <DialogTrigger
       render={
         <button
           type="button"
           onClick={primeKeyboard}
-          className="flex h-11 w-full items-center gap-3 rounded-full bg-muted/70 px-5 text-ds-regular text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn('flex h-11 w-full items-center gap-3 rounded-full bg-muted/70 px-5 text-ds-regular text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50', staticPlaceholder && 'h-9 w-32 gap-2 px-3.5 text-sm')}
         >
           <SearchIcon className="size-5 shrink-0" />
-          <SearchPlaceholder term={term} />
+          <SearchPlaceholder term={term} staticPlaceholder={staticPlaceholder} />
           <span className="sr-only">{COPY.search}</span>
         </button>
       }
@@ -188,13 +188,20 @@ function SearchTrigger({term}: {term: string}) {
   );
 }
 
-function SearchPlaceholder({term}: {term: string}) {
+function SearchPlaceholder({term, staticPlaceholder}: {term: string; staticPlaceholder?: boolean}) {
   const isDesktop = useMediaQuery('(min-width: 48rem)');
 
   if (term) {
     return (
       <span aria-hidden="true" className="min-w-0 truncate">
         {term}
+      </span>
+    );
+  }
+  if (staticPlaceholder) {
+    return (
+      <span aria-hidden="true" className="min-w-0 truncate">
+        Search
       </span>
     );
   }

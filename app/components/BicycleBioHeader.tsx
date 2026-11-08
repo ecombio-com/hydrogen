@@ -56,7 +56,7 @@ export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: 
 
         {/* Utility strip: thin grey bar, links right-aligned with dividers */}
         <div className="hidden bg-muted md:block">
-          <Container className="flex h-9 items-center justify-end text-ds-small font-medium">
+          <Container className="max-w-none! px-6! flex h-9 items-center justify-end text-ds-small font-medium">
             <div className="flex items-center divide-x divide-foreground/30 [&>a]:px-3 [&>a:last-child]:pr-0">
               {UTILITY_LINKS.map((link) => (
                 <LocalizedLink key={link.url} href={link.url} className="whitespace-nowrap hover:opacity-70">
@@ -71,7 +71,7 @@ export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: 
         </div>
 
         {/* Main row: logo | centered menu | search, account, cart */}
-        <Container className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border-subtle py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 md:border-0">
+        <Container className="max-w-none! px-6! flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border-subtle py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 md:border-0">
           <div className="flex items-center gap-3">
             <div className="md:hidden">
               <MobileMenu items={navItems} isLoggedIn={isLoggedIn} />
@@ -90,8 +90,8 @@ export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: 
           </div>
 
           <div className="ml-auto flex items-center justify-end gap-4 md:ml-0">
-            <div className="order-last w-full md:order-none md:w-44 lg:w-60">
-              <SearchModal />
+            <div className="order-last w-full md:order-none md:w-32">
+              <SearchModal staticPlaceholder />
             </div>
             <div className="[&_span[aria-hidden=true]]:hidden"><AccountLink isLoggedIn={isLoggedIn} /></div>
             <CartToggle cart={cart} />
