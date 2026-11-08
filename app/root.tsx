@@ -83,6 +83,7 @@ export async function loader(args: Route.LoaderArgs) {
     ...deferredData,
     ...criticalData,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+    brand: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).brand,
     origin: new URL(args.request.url).origin,
     locale: `${storefront.i18n.language}-${storefront.i18n.country}`.toLowerCase(),
     shop: getShopAnalytics({
@@ -153,9 +154,10 @@ export function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
   const rootData = useRouteLoaderData<RootLoader>('root');
   const lang = rootData?.locale.split('-')[0] ?? 'en';
+  const brand = rootData?.brand ?? 'ecombio';
 
   return (
-    <html lang={lang}>
+    <html lang={lang} data-brand={brand}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />

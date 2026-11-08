@@ -1,0 +1,9 @@
+// Brand registry. ecombio points at today's components, so nothing moves.
+// BicycleBio entries get added here as its design is built.
+export type BrandId = 'ecombio' | 'bicyclebio';
+
+export const BRAND_IDS: readonly BrandId[] = ['ecombio', 'bicyclebio'];
+
+export function isBrandId(value: unknown): value is BrandId {
+  return typeof value === 'string' && (BRAND_IDS as readonly string[]).includes(value);
+}

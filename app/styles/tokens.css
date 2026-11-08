@@ -183,3 +183,7 @@
   --scrim: rgb(20 20 20 / 0.4);
   --scrim-blur: 6px;
 }
+
+/* BicycleBio overrides: colors, fonts, radius. ecombio uses the :root defaults. */
+[data-brand="bicyclebio"] {
+}
