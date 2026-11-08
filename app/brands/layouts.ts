@@ -2,6 +2,7 @@ import type {ComponentProps, ComponentType} from 'react';
 import {Header} from '~/components/Header';
 import {Footer} from '~/components/Footer';
 import {BicycleBioHeader} from '~/components/BicycleBioHeader';
+import {BicycleBioHeaderGym} from '~/components/BicycleBioHeaderGym';
 import type {BrandId} from '~/brands/registry';
 
 export type BrandLayout = {
@@ -11,9 +12,12 @@ export type BrandLayout = {
 
 const ECOMBIO_LAYOUT: BrandLayout = {Header, Footer};
 
+// BicycleBio header style: 'nike' (strip, centered nav, search pill) or 'gym' (nav left, wordmark center, icons right)
+const BICYCLEBIO_HEADER_STYLE: 'nike' | 'gym' = 'gym';
+
 export const BRAND_LAYOUTS: Record<BrandId, BrandLayout> = {
   ecombio: ECOMBIO_LAYOUT,
-  bicyclebio: {Header: BicycleBioHeader, Footer},
+  bicyclebio: {Header: BICYCLEBIO_HEADER_STYLE === 'gym' ? BicycleBioHeaderGym : BicycleBioHeader, Footer},
 };
 
 export function getBrandLayout(brand?: BrandId | null): BrandLayout {
