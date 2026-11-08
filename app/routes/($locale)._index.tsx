@@ -17,7 +17,8 @@ import {buildMeta} from '~/lib/blog';
 import {getUrls} from '~/lib/blog.server';
 import {BicycleBioHome} from '~/components/home/BicycleBioHome';
 import {getStorefrontConfig} from '~/lib/storefront-config';
-import CollectionRoute, {loader as collectionLoader} from './($locale).collections.$handle';
+import {loader as collectionLoader} from './($locale).collections.$handle';
+import {BrandHome, BRAND_HOME} from '~/components/home/BrandHome';
 import {communityStories, heroSlides, shopCategories} from '~/lib/home';
 import {getShowcaseSection} from '~/lib/home-showcase.server';
 import {
@@ -37,7 +38,7 @@ const DESCRIPTION =
 
 export const meta: Route.MetaFunction = ({data}) =>
   (data as any)?.isBrandHome
-    ? buildMeta({description: (data as any)?.collection?.description ?? '', title: (data as any)?.collection?.title ?? '', url: '/'})
+    ? buildMeta({description: BRAND_HOME[(data as any).brandSlug]?.description ?? '', title: BRAND_HOME[(data as any).brandSlug]?.title ?? '', url: '/'})
     :
   data?.isBicycleBio
     ? buildMeta({description: BB_DESCRIPTION, title: BB_TITLE, url: data.canonicalUrl ?? '/'})
@@ -50,7 +51,7 @@ export async function loader(args: Route.LoaderArgs) {
   if (homeCollection) {
     const res: any = await collectionLoader({...args, params: {...args.params, handle: homeCollection}} as any);
     const payload = res && typeof res === 'object' && 'data' in res && 'init' in res ? res.data : res;
-    return {...payload, isBrandHome: true} as any;
+    return {...payload, isBrandHome: true, brandSlug: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug} as any;
   }
   if (getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).brand === 'bicyclebio') {
     const canonical = getUrls(request).canonical;
@@ -93,7 +94,7 @@ export async function loader(args: Route.LoaderArgs) {
 
 export default function HomeRoute() {
   const data = useLoaderData<typeof loader>();
-  if ((data as any).isBrandHome) return <CollectionRoute {...({loaderData: data} as any)} />;
+  if ((data as any).isBrandHome) return <BrandHome slug={(data as any).brandSlug} products={(data as any).products ?? []} pageInfo={(data as any).pageInfo} />;
   return data.isBicycleBio ? <BicycleBioHome /> : <EcombioHome />;
 }
 
