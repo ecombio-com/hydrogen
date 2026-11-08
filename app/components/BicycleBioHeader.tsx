@@ -49,44 +49,50 @@ export function BicycleBioHeader({header, isLoggedIn, cart, publicStoreDomain}: 
       </a>
       <header
         id="nav-outer"
-        className="sticky top-0 z-30 w-full border-b border-border-subtle bg-card pt-[env(safe-area-inset-top,0px)]"
+        className="sticky top-0 z-30 w-full bg-card pt-[env(safe-area-inset-top,0px)]"
       >
         <NavScrollBehavior />
         <NavHeightSync />
 
+        {/* Utility strip: thin grey bar, links right-aligned with dividers */}
         <div className="hidden bg-muted md:block">
-          <Container className="flex h-8 items-center justify-end gap-5 text-ds-small font-medium">
-            {UTILITY_LINKS.map((link) => (
-              <LocalizedLink key={link.url} href={link.url} className="whitespace-nowrap hover:opacity-70">
-                {link.label}
-              </LocalizedLink>
-            ))}
-            <ZipCode />
+          <Container className="flex h-9 items-center justify-end text-ds-small font-medium">
+            <div className="flex items-center divide-x divide-foreground/30 [&>a]:px-3 [&>a:last-child]:pr-0">
+              {UTILITY_LINKS.map((link) => (
+                <LocalizedLink key={link.url} href={link.url} className="whitespace-nowrap hover:opacity-70">
+                  {link.label}
+                </LocalizedLink>
+              ))}
+            </div>
+            <div className="pl-3">
+              <ZipCode />
+            </div>
           </Container>
         </div>
 
-        <Container className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 md:flex-nowrap md:gap-8">
-          <div className="md:hidden">
-            <MobileMenu items={navItems} isLoggedIn={isLoggedIn} />
+        {/* Main row: logo | centered menu | search, account, cart */}
+        <Container className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border-subtle py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-8 md:border-0">
+          <div className="flex items-center gap-3">
+            <div className="md:hidden">
+              <MobileMenu items={navItems} isLoggedIn={isLoggedIn} />
+            </div>
+            <LocalizedLink
+              href="/"
+              aria-label={`${BRAND_NAME} home`}
+              className="shrink-0 text-xl font-semibold tracking-tight"
+            >
+              {BRAND_NAME}
+            </LocalizedLink>
           </div>
 
-          <LocalizedLink
-            href="/"
-            aria-label={`${BRAND_NAME} home`}
-            className="shrink-0 text-xl font-medium tracking-tight"
-          >
-            {BRAND_NAME}
-          </LocalizedLink>
-
-          <div className="hidden min-w-0 flex-1 justify-center md:flex">
+          <div className="hidden justify-center md:flex">
             <QuickLinks items={navItems} />
           </div>
 
-          <div className="order-last w-full md:order-none md:w-56 md:shrink-0">
-            <SearchModal />
-          </div>
-
-          <div className="ml-auto flex items-center gap-5 md:ml-0">
+          <div className="ml-auto flex items-center justify-end gap-4 md:ml-0">
+            <div className="order-last w-full md:order-none md:w-52">
+              <SearchModal />
+            </div>
             <AccountLink isLoggedIn={isLoggedIn} />
             <CartToggle cart={cart} />
           </div>
