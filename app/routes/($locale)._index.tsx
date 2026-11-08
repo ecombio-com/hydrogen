@@ -15,6 +15,8 @@ import {Page} from '~/components/ui/page';
 import {Sections} from '~/components/ui/sections';
 import {buildMeta} from '~/lib/blog';
 import {getUrls} from '~/lib/blog.server';
+import {BicycleBioHome} from '~/components/home/BicycleBioHome';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import {communityStories, heroSlides, shopCategories} from '~/lib/home';
 import {getShowcaseSection} from '~/lib/home-showcase.server';
 import {
@@ -27,14 +29,32 @@ import {
 } from '~/lib/home.server';
 
 const TITLE = 'Home | Ecombio';
+const BB_TITLE = 'BicycleBio | Electric bikes by rider, class and brand';
+const BB_DESCRIPTION = 'Find the e-bike that fits your ride. Shop by rider, class and power, or brand, with guides that explain the rest.';
 const DESCRIPTION =
   'Shop electric bikes, scooters and skateboards from top brands, with free shipping and a 1-year warranty.';
 
 export const meta: Route.MetaFunction = ({data}) =>
-  buildMeta({description: DESCRIPTION, title: TITLE, url: data?.canonicalUrl ?? '/'});
+  data?.isBicycleBio
+    ? buildMeta({description: BB_DESCRIPTION, title: BB_TITLE, url: data.canonicalUrl ?? '/'})
+    : buildMeta({description: DESCRIPTION, title: TITLE, url: data?.canonicalUrl ?? '/'});
 
 export async function loader({context, request}: Route.LoaderArgs) {
   const {storefront, yotpo} = context;
+  if (getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).brand === 'bicyclebio') {
+    const canonical = getUrls(request).canonical;
+    return {
+      isBicycleBio: true,
+      canonicalUrl: canonical,
+      homeVideo: null,
+      categorySections: [],
+      shopCategories: [],
+      showcase: null,
+      slides: [],
+      stories: [],
+      studies: [],
+    };
+  }
   const [cms, showcaseContent, categorySections, shopCategoryItems, homeVideo] = await Promise.all([
     getHomeCmsContent(storefront, {
       getReviews: (id) =>
@@ -47,6 +67,7 @@ export async function loader({context, request}: Route.LoaderArgs) {
   ]);
   const showcase = await getShowcaseSection(storefront, showcaseContent, yotpo);
   return {
+    isBicycleBio: false,
     canonicalUrl: getUrls(request).canonical,
     homeVideo,
     categorySections,
@@ -59,7 +80,12 @@ export async function loader({context, request}: Route.LoaderArgs) {
   };
 }
 
-export default function Homepage() {
+export default function HomeRoute() {
+  const data = useLoaderData<typeof loader>();
+  return data.isBicycleBio ? <BicycleBioHome /> : <EcombioHome />;
+}
+
+function EcombioHome() {
   const {categorySections, shopCategories: categories, homeVideo, showcase, slides, stories, studies} =
     useLoaderData<typeof loader>();
   return (
