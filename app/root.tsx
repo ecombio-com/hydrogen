@@ -1,3 +1,4 @@
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
 import {
   Outlet,
@@ -110,7 +111,7 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
-        headerMenuHandle: 'main-menu', // Adjust to your header menu handle
+        headerMenuHandle: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).headerMenuHandle,
       },
     }),
     getAnnouncementBar(storefront),
@@ -133,7 +134,7 @@ function loadDeferredData({context}: Route.LoaderArgs) {
     .query(FOOTER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
-        footerMenuHandle: 'footer', // Adjust to your footer menu handle
+        footerMenuHandle: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).footerMenuHandle,
       },
     })
     .catch((error: Error) => {
