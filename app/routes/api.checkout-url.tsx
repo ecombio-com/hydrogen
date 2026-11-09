@@ -15,6 +15,7 @@ export async function loader({context}: LoaderFunctionArgs) {
     (a) => a.key === 'storefront_id' && a.value === STOREFRONT_ID,
   );
   if (!stamped) await context.cart.updateAttributes([{key: 'storefront_id', value: STOREFRONT_ID}]);
+  context.session.set('kitCheckoutStarted', true);
   return Response.json({url: forceCheckoutHost(cart.checkoutUrl)}, {headers});
 }
 

@@ -14,11 +14,12 @@ export async function loader({request, context}: Route.LoaderArgs) {
 
   if (!stripeCheckoutEnabled(env)) {
     // Shopify hosted checkout: Checkout Kit sends the buyer here after Shopify creates the order.
-    if (new URL(request.url).searchParams.get('kit') !== '1') return redirect('/cart');
+    const kit = new URL(request.url).searchParams.get('kit') === '1';
+    if (!kit || !context.session.get('kitCheckoutStarted')) return redirect('/cart');
+    context.session.unset('kitCheckoutStarted');
     const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
     context.session.unset('checkoutAddress');
     const fresh = await context.cart.create({});
-    console.log('[complete-debug] fresh', JSON.stringify(fresh).slice(0, 400));
     const headers = fresh.cart?.id ? context.cart.setCartId(fresh.cart.id) : undefined;
     return data({ok: true, email: address?.email} satisfies Result, {headers});
   }
