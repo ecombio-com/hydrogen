@@ -1,3 +1,4 @@
+import {forceCheckoutHost} from '~/lib/checkout-host';
 import type {OptimisticCart} from '@shopify/hydrogen';
 import {LockIcon} from 'lucide-react';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
@@ -25,7 +26,7 @@ export function CartPageSummary({
       <div className="border-t border-border pt-5">
         <CartTotal cart={cart} />
       </div>
-      <CartCheckout checkoutUrl={cart?.checkoutUrl} hasLines={hasLines} />
+      <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={hasLines} />
       <div className="grid justify-items-center gap-2.5 rounded-ds-md border border-border p-2.5">
         <PaymentIcons />
         <p className="flex items-center gap-1.5 text-ds-small text-muted-foreground">

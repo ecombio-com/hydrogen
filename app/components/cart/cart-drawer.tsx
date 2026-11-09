@@ -1,3 +1,4 @@
+import {forceCheckoutHost} from '~/lib/checkout-host';
 import {useOptimisticCart, type OptimisticCart} from '@shopify/hydrogen';
 import {cn} from 'cn';
 import {Loader2, XIcon} from 'lucide-react';
@@ -115,7 +116,7 @@ function DrawerBody({cart}: {cart: OptimisticCart<CartApiQueryFragment | null> |
           <DiscountForm discountCodes={cart?.discountCodes ?? []} />
           <CartTotal cart={cart} />
         </div>
-        <CartCheckout checkoutUrl={cart?.checkoutUrl} hasLines={lines.length > 0} />
+        <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={lines.length > 0} />
       </footer>
     </div>
   );

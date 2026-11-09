@@ -1,3 +1,4 @@
+import {forceCheckoutHost} from '~/lib/checkout-host';
 import {localePath} from '~/lib/locale-path';
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {VERSIONS} from '~/lib/versions';
@@ -49,7 +50,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
     // Shopify hosted checkout: the Pay button opens Shopify checkout (Checkout Kit), already prefilled.
     return {
       mode: 'shopify' as const,
-      checkoutUrl: cart.checkoutUrl,
+      checkoutUrl: forceCheckoutHost(cart.checkoutUrl),
       subtotal: money(lineSum, currency),
       discount,
       total: money(totalCents, currency),

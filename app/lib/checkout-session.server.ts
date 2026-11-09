@@ -1,3 +1,4 @@
+import {forceCheckoutHost} from '~/lib/checkout-host';
 const CART_CREATE = `#graphql
   mutation CheckoutSessionCreate($input: CartInput!) {
     cartCreate(input: $input) {
@@ -61,7 +62,7 @@ export async function createCheckoutSession(
     status: 200,
     body: {
       id: cart.id,
-      next: {type: 'redirect', url: cart.checkoutUrl},
+      next: {type: 'redirect', url: forceCheckoutHost(cart.checkoutUrl)},
       totals: cart.cost,
       discountCodes: cart.discountCodes,
     },

@@ -1,3 +1,4 @@
+import {forceCheckoutHost} from '~/lib/checkout-host';
 import type {LoaderFunctionArgs} from 'react-router';
 import {STOREFRONT_ID} from '~/lib/storefront-id';
 
@@ -14,6 +15,6 @@ export async function loader({context}: LoaderFunctionArgs) {
     (a) => a.key === 'storefront_id' && a.value === STOREFRONT_ID,
   );
   if (!stamped) await context.cart.updateAttributes([{key: 'storefront_id', value: STOREFRONT_ID}]);
-  return Response.json({url: cart.checkoutUrl}, {headers});
+  return Response.json({url: forceCheckoutHost(cart.checkoutUrl)}, {headers});
 }
 
