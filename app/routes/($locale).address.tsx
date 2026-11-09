@@ -87,8 +87,6 @@ export async function action({request, context, params}: Route.ActionArgs) {
         },
       },
     ]);
-    console.log('[address-debug] buyer', JSON.stringify(buyer).slice(0, 600));
-    console.log('[address-debug] delivery', JSON.stringify(delivery).slice(0, 600));
     const problem = buyer.userErrors?.[0]?.message ?? delivery.userErrors?.[0]?.message;
     if (problem) return fail({error: problem});
   }

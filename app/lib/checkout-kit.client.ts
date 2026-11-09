@@ -104,7 +104,7 @@ async function openWhenReady(link: HTMLAnchorElement) {
       openCheckout(url);
       return;
     }
-    window.location.assign(link.href); // last resort: Kit or server unavailable
+    window.dispatchEvent(new CustomEvent('checkout-kit:error'));
   } finally {
     link.removeAttribute('aria-busy');
   }
