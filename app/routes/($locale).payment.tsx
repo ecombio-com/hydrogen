@@ -3,7 +3,8 @@ import {getStorefrontConfig} from '~/lib/storefront-config';
 import {localePath} from '~/lib/locale-path';
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {VERSIONS} from '~/lib/versions';
-import {redirect, useLoaderData, useParams} from 'react-router';
+import {redirect, useLoaderData, useParams, useRevalidator} from 'react-router';
+import {diffPrices, type PriceSnapshot} from '~/lib/price-watch';
 import type {Route} from './+types/($locale).payment';
 import type {CheckoutAddress} from '~/components/checkout/address';
 import {CheckoutSteps} from '~/components/checkout/steps';
@@ -47,11 +48,18 @@ export async function loader({context, params}: Route.LoaderArgs) {
   const discount = discountCents ? '-' + money(discountCents, currency) : '';
   const lines = cart.lines.nodes.map((l) => ({id: l.id, title: l.merchandise.product.title, qty: l.quantity}));
 
+  // Compare against the prices saved when the shopper was on the address step.
+  const snapshot = context.session.get('priceSnapshot') as PriceSnapshot | undefined;
+  const priceChanges = snapshot
+    ? diffPrices(snapshot, cart).map((c) => ({...c, from: money(c.from, currency), to: money(c.to, currency)}))
+    : [];
+
   if (!stripeCheckoutEnabled(context.env)) {
     // Shopify hosted checkout: the Pay button opens Shopify checkout (Checkout Kit), already prefilled.
     return {
       mode: 'shopify' as const,
       checkoutUrl: forceCheckoutHost(cart.checkoutUrl),
+      priceChanges,
       subtotal: money(lineSum, currency),
       discount,
       total: money(totalCents, currency),
@@ -109,6 +117,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
   return {
     mode: 'stripe' as const,
     publishableKey: env.PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    priceChanges,
     clientSecret: intent.data.client_secret,
     total: money(totals.total, currency),
     subtotal: money(totals.subtotal, currency),
@@ -124,9 +133,26 @@ export default function Payment() {
   const d = useLoaderData<typeof loader>();
   const params = useParams();
   const {address, lines, subtotal, discount, total} = d;
+  const {revalidate} = useRevalidator();
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') revalidate();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [revalidate]);
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <CheckoutSteps current="Payment" />
+      {d.priceChanges.length ? (
+        <div role="status" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+          <p className="font-semibold">Price update</p>
+          {d.priceChanges.map((c) => (
+            <p key={c.id}>{c.title}: {c.from} → {c.to}</p>
+          ))}
+          <p className="mt-1">The total below reflects the new price.</p>
+        </div>
+      ) : null}
       <div className="grid gap-10 md:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <div className="rounded-lg border p-4 text-sm">

@@ -11,6 +11,7 @@ import {
   type CheckoutAddress,
 } from '~/components/checkout/address';
 import {CheckoutSteps} from '~/components/checkout/steps';
+import {snapshotPrices} from '~/lib/price-watch';
 
 type ActionResult = {
   error?: string;
@@ -29,6 +30,7 @@ function toE164(raw: string): string | undefined {
 export async function loader({context, params}: Route.LoaderArgs) {
   const cart = await context.cart.get();
   if (!cart?.totalQuantity) return redirect(localePath('/cart', params));
+  context.session.set('priceSnapshot', snapshotPrices(cart));
   if (!stripeCheckoutEnabled(context.env)) {
     await context.cart.updateAttributes([{key: 'storefront_id', value: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug}]);
   }
