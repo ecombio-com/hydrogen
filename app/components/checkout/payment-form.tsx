@@ -1,7 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
 import {loadStripe, type Stripe, type StripeElements} from '@stripe/stripe-js';
 
 export function PaymentForm({publishableKey, clientSecret, total}: {publishableKey: string; clientSecret: string; total: string}) {
+  const navigate = useNavigate();
   const mountRef = useRef<HTMLDivElement>(null);
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
@@ -14,8 +16,8 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
     let unmount: (() => void) | undefined;
     loadStripe(publishableKey).then((stripe) => {
       if (cancelled || !stripe || !mountRef.current) return;
-      const elements = stripe.elements({clientSecret, appearance: {theme: 'stripe'}});
-      const payment = elements.create('payment');
+      const elements = stripe.elements({clientSecret, appearance: {theme: 'stripe', labels: 'floating', variables: {borderRadius: '8px'}}});
+      const payment = elements.create('payment', {layout: {type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false}});
       payment.mount(mountRef.current);
       payment.on('ready', () => setReady(true));
       stripeRef.current = stripe;
@@ -35,11 +37,16 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
     if (!stripe || !elements) return;
     setBusy(true);
     setError(null);
-    const {error} = await stripe.confirmPayment({
+    const {error, paymentIntent} = await stripe.confirmPayment({
       elements,
       confirmParams: {return_url: `${window.location.origin}/payment/complete`},
+      redirect: 'if_required',
     });
     if (error) setError(error.message ?? 'Payment failed.');
+    else if (paymentIntent) {
+      navigate(`/payment/complete?payment_intent=${paymentIntent.id}`);
+      return;
+    }
     setBusy(false);
   }
 

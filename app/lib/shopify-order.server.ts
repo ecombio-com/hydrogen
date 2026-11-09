@@ -30,7 +30,7 @@ export type Mailing = {
   phone?: string;
 };
 
-export type OrderLine = {variantId: string; quantity: number};
+export type OrderLine = {variantId: string; quantity: number; unitCents?: number};
 type Made = {ok: true; orderName: string} | {ok: false; message: string};
 
 export async function stripeCall(env: Env, path: string, body?: URLSearchParams) {
@@ -81,8 +81,9 @@ export function parseLines(raw?: string): OrderLine[] {
     .split(',')
     .filter(Boolean)
     .map((part) => {
-      const [id, qty] = part.split('x');
-      return {variantId: `gid://shopify/ProductVariant/${id}`, quantity: Number(qty)};
+      const [id, rest = ''] = part.split('x');
+      const [qty, cents] = rest.split('@');
+      return {variantId: `gid://shopify/ProductVariant/${id}`, quantity: Number(qty), ...(cents ? {unitCents: Number(cents)} : {})};
     })
     .filter((l) => l.quantity > 0);
 }
@@ -136,8 +137,8 @@ export async function createPaidOrder(
       order: {
         email: input.email,
         currency: cur,
-        tags: [tag],
-        lineItems: input.lines.map((l) => ({variantId: l.variantId, quantity: l.quantity})),
+        tags: [tag, ...(pi.metadata?.storefront_id ? [`storefront_${pi.metadata.storefront_id}`] : [])],
+        lineItems: input.lines.map((l) => ({variantId: l.variantId, quantity: l.quantity, ...(l.unitCents != null ? {priceSet: moneyBag(l.unitCents)} : {})})),
         shippingAddress: input.mailing,
         billingAddress: input.mailing,
         shippingLines: [{title: shipCents ? 'Shipping' : 'Free shipping', code: 'standard', priceSet: moneyBag(shipCents)}],
@@ -164,3 +165,8 @@ export async function createPaidOrder(
   }
 }
 
+
+/** The lines that were actually charged, rebuilt from the PaymentIntent metadata. */
+export function linesFromIntent(pi: Intent): OrderLine[] {
+  return parseLines(Array.from({length: 10}, (_, i) => pi.metadata?.[i === 0 ? 'lines' : `lines_${i + 1}`] ?? '').join(''));
+}

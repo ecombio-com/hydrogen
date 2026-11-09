@@ -2,7 +2,7 @@ import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {data, redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/($locale).payment_.complete';
 import type {CheckoutAddress} from '~/components/checkout/address';
-import {createPaidOrder, stripeCall, type Env} from '~/lib/shopify-order.server';
+import {createPaidOrder, linesFromIntent, stripeCall, type Env} from '~/lib/shopify-order.server';
 
 type Result = {ok: boolean; message?: string; orderName?: string; email?: string};
 
@@ -14,11 +14,12 @@ export async function loader({request, context}: Route.LoaderArgs) {
 
   if (!stripeCheckoutEnabled(env)) {
     // Shopify hosted checkout: Checkout Kit sends the buyer here after Shopify creates the order.
-    if (new URL(request.url).searchParams.get('kit') !== '1') return redirect('/cart');
+    const kit = new URL(request.url).searchParams.get('kit') === '1';
+    if (!kit || !context.session.get('kitCheckoutStarted')) return redirect('/cart');
+    context.session.unset('kitCheckoutStarted');
     const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
     context.session.unset('checkoutAddress');
     const fresh = await context.cart.create({});
-    console.log('[complete-debug] fresh', JSON.stringify(fresh).slice(0, 400));
     const headers = fresh.cart?.id ? context.cart.setCartId(fresh.cart.id) : undefined;
     return data({ok: true, email: address?.email} satisfies Result, {headers});
   }
@@ -53,7 +54,7 @@ export async function loader({request, context}: Route.LoaderArgs) {
       city: address.city, province: address.state, zip: address.zip,
       countryCode: 'US', phone: address.phone,
     },
-    lines: cart.lines.nodes.map((l) => ({variantId: l.merchandise.id, quantity: l.quantity})),
+    lines: linesFromIntent(pi),
   });
   if (!made.ok) {
     return {ok: false, message: `Payment received, but the order was not created: ${made.message}`} satisfies Result;

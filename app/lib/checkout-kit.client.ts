@@ -1,12 +1,14 @@
 // Checkout Kit for Web wiring. Client only, imported once from entry.client.tsx.
-// Links marked data-checkout-kit keep href="/address", which the server redirects to Shopify checkout.
-// If the Kit script, the prefetch or the popup fails, the browser simply follows that link.
+// Shopify checkout opens in a popup over the storefront; the storefront page is not navigated away.
+// The link's own href (the Shopify checkout URL) is only followed as a last resort, when the Kit
+// or the URL endpoint is unavailable.
 const KIT_TARGET = 'popup'; // 'popup' or 'auto' (new tab)
 const KIT_TELEMETRY = 'true'; // 'false' opts out of Shopify's anonymous diagnostics
 const URL_ENDPOINT = '/api/checkout-url';
 const SELECTOR = 'a[data-checkout-kit]';
 const MAX_AGE_MS = 30_000;
 const REFRESH_MS = 10_000;
+const READY_TIMEOUT_MS = 6_000;
 
 type KitElement = HTMLElement & {src: string; open: () => void};
 
@@ -14,6 +16,8 @@ let kitLoad: Promise<void> | null = null;
 let inflight: Promise<void> | null = null;
 let cached: {url: string; at: number} | null = null;
 let element: KitElement | null = null;
+
+const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
 function loadKit() {
   kitLoad ??= import('@shopify/checkout-kit/shopify-checkout')
@@ -24,6 +28,10 @@ function loadKit() {
 
 function kitReady() {
   return Boolean(customElements.get('shopify-checkout'));
+}
+
+function freshUrl() {
+  return cached && Date.now() - cached.at < MAX_AGE_MS ? cached.url : null;
 }
 
 function prefetch() {
@@ -44,14 +52,30 @@ function prefetch() {
     });
 }
 
+// Resolves to a usable checkout URL once the URL is fresh and the Kit is registered, else null.
+async function ensureReady(): Promise<string | null> {
+  if (!freshUrl()) {
+    cached = null;
+    prefetch();
+    await Promise.race([inflight, wait(READY_TIMEOUT_MS)]);
+  }
+  const url = freshUrl();
+  if (!url) return null;
+  await Promise.race([loadKit(), wait(READY_TIMEOUT_MS)]);
+  return kitReady() ? url : null;
+}
+
 function onComplete(event: Event) {
   const orderId = (event as CustomEvent).detail?.checkout?.order?.id ?? null;
   window.dispatchEvent(new CustomEvent('checkout-kit:complete', {detail: {orderId}}));
   window.location.assign('/payment/complete?kit=1' + (orderId ? '&order=' + encodeURIComponent(String(orderId)) : ''));
 }
 
-function onError() {
-  window.location.assign(cached?.url ?? '/cart');
+function onError(event: Event) {
+  // Stay on the storefront. Drop the cached URL so the next click fetches a fresh one.
+  console.error('[checkout-kit] error', (event as CustomEvent).detail?.error);
+  cached = null;
+  window.dispatchEvent(new CustomEvent('checkout-kit:error'));
 }
 
 function getElement(): KitElement {
@@ -66,20 +90,39 @@ function getElement(): KitElement {
   return el;
 }
 
+function openCheckout(url: string) {
+  const el = getElement();
+  el.src = url;
+  el.open();
+}
+
+async function openWhenReady(link: HTMLAnchorElement) {
+  link.setAttribute('aria-busy', 'true');
+  try {
+    const url = await ensureReady();
+    if (url) {
+      openCheckout(url);
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('checkout-kit:error'));
+  } finally {
+    link.removeAttribute('aria-busy');
+  }
+}
+
 function onClick(event: MouseEvent) {
   const target = event.target;
   if (!(target instanceof Element)) return;
-  if (!target.closest(SELECTOR) || event.defaultPrevented || event.button !== 0) return;
+  const link = target.closest<HTMLAnchorElement>(SELECTOR);
+  if (!link || event.defaultPrevented || event.button !== 0) return;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  const fresh = cached && Date.now() - cached.at < MAX_AGE_MS ? cached.url : null;
-  if (!fresh || !kitReady()) {
-    prefetch();
-    return; // default navigation: /address -> server redirect to Shopify checkout
-  }
   event.preventDefault();
-  const el = getElement();
-  el.src = fresh;
-  el.open();
+  const url = freshUrl();
+  if (url && kitReady()) {
+    openCheckout(url);
+    return;
+  }
+  void openWhenReady(link);
 }
 
 function warm(event: Event) {
@@ -106,6 +149,3 @@ function init() {
 }
 
 init();
-
-
-
