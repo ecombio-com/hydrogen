@@ -1,5 +1,5 @@
 import {forceCheckoutHost} from '~/lib/checkout-host';
-import {STOREFRONT_ID} from '~/lib/storefront-id';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import {localePath} from '~/lib/locale-path';
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {VERSIONS} from '~/lib/versions';
@@ -79,7 +79,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
     currency: currency.toLowerCase(),
     receipt_email: address.email,
     'metadata[cart_id]': cart.id,
-    'metadata[storefront_id]': STOREFRONT_ID,
+    'metadata[storefront_id]': getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug,
     ...(linesMeta.length <= 5000 ? Object.fromEntries((linesMeta.match(/.{1,500}/g) ?? []).map((c, i) => [i === 0 ? 'metadata[lines]' : `metadata[lines_${i + 1}]`, c])) : {}),
     'metadata[shipping_cents]': String(totals.shipping),
     'metadata[tax_cents]': String(totals.tax),

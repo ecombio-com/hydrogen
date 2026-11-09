@@ -1,5 +1,5 @@
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
-import {STOREFRONT_ID} from '~/lib/storefront-id';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import type {ActionFunctionArgs} from 'react-router';
 import {createPaidOrder, mailingFromIntent, parseLines, stripeCall, type Env} from '~/lib/shopify-order.server';
 
@@ -41,7 +41,7 @@ export async function action({request, context}: ActionFunctionArgs) {
   const pi = await stripeCall(env, `payment_intents/${piId}`);
   if (pi.status !== 'succeeded') return new Response('not succeeded', {status: 200});
   if (!pi.metadata?.cart_id) return new Response('skipped: not a checkout payment', {status: 200});
-  if (pi.metadata.storefront_id !== STOREFRONT_ID) return new Response('skipped: other storefront', {status: 200});
+  if (pi.metadata.storefront_id !== getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug) return new Response('skipped: other storefront', {status: 200});
   if (pi.metadata.shopify_order_name) return new Response('already done', {status: 200});
 
   const minAge = Number(env.STRIPE_WEBHOOK_MIN_AGE_SECONDS ?? 120);

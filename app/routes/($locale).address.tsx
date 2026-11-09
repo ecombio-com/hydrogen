@@ -1,5 +1,5 @@
 import {localePath} from '~/lib/locale-path';
-import {STOREFRONT_ID} from '~/lib/storefront-id';
+import {getStorefrontConfig} from '~/lib/storefront-config';
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {Form, redirect, useActionData, useLoaderData} from 'react-router';
 import type {Route} from './+types/($locale).address';
@@ -18,7 +18,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
   const cart = await context.cart.get();
   if (!cart?.totalQuantity) return redirect(localePath('/cart', params));
   if (!stripeCheckoutEnabled(context.env)) {
-    await context.cart.updateAttributes([{key: 'storefront_id', value: STOREFRONT_ID}]);
+    await context.cart.updateAttributes([{key: 'storefront_id', value: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug}]);
   }
   return {address: (context.session.get('checkoutAddress') as CheckoutAddress | undefined) ?? null};
 }
