@@ -1,7 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
 import {loadStripe, type Stripe, type StripeElements} from '@stripe/stripe-js';
 
 export function PaymentForm({publishableKey, clientSecret, total}: {publishableKey: string; clientSecret: string; total: string}) {
+  const navigate = useNavigate();
   const mountRef = useRef<HTMLDivElement>(null);
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
@@ -35,11 +37,16 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
     if (!stripe || !elements) return;
     setBusy(true);
     setError(null);
-    const {error} = await stripe.confirmPayment({
+    const {error, paymentIntent} = await stripe.confirmPayment({
       elements,
       confirmParams: {return_url: `${window.location.origin}/payment/complete`},
+      redirect: 'if_required',
     });
     if (error) setError(error.message ?? 'Payment failed.');
+    else if (paymentIntent) {
+      navigate(`/payment/complete?payment_intent=${paymentIntent.id}`);
+      return;
+    }
     setBusy(false);
   }
 
