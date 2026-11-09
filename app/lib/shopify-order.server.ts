@@ -136,7 +136,7 @@ export async function createPaidOrder(
       order: {
         email: input.email,
         currency: cur,
-        tags: [tag],
+        tags: [tag, ...(pi.metadata?.storefront_id ? [`storefront_${pi.metadata.storefront_id}`] : [])],
         lineItems: input.lines.map((l) => ({variantId: l.variantId, quantity: l.quantity})),
         shippingAddress: input.mailing,
         billingAddress: input.mailing,

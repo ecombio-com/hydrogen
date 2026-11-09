@@ -1,4 +1,5 @@
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
+import {STOREFRONT_ID} from '~/lib/storefront-id';
 import type {ActionFunctionArgs} from 'react-router';
 import {createPaidOrder, mailingFromIntent, parseLines, stripeCall, type Env} from '~/lib/shopify-order.server';
 
@@ -40,6 +41,7 @@ export async function action({request, context}: ActionFunctionArgs) {
   const pi = await stripeCall(env, `payment_intents/${piId}`);
   if (pi.status !== 'succeeded') return new Response('not succeeded', {status: 200});
   if (!pi.metadata?.cart_id) return new Response('skipped: not a checkout payment', {status: 200});
+  if (pi.metadata.storefront_id !== STOREFRONT_ID) return new Response('skipped: other storefront', {status: 200});
   if (pi.metadata.shopify_order_name) return new Response('already done', {status: 200});
 
   const minAge = Number(env.STRIPE_WEBHOOK_MIN_AGE_SECONDS ?? 120);
@@ -47,7 +49,7 @@ export async function action({request, context}: ActionFunctionArgs) {
     return new Response('too fresh, retry later', {status: 503});
   }
 
-  const lines = parseLines(pi.metadata.lines);
+  const lines = parseLines(Array.from({length: 10}, (_, i) => pi.metadata?.[i === 0 ? 'lines' : `lines_${i + 1}`] ?? '').join(''));
   const mailing = mailingFromIntent(pi);
   if (!lines.length || !mailing || !pi.receipt_email) {
     return new Response('cannot rebuild order: missing lines, address or email', {status: 500});
