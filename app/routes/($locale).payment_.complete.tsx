@@ -2,7 +2,7 @@ import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {data, redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/($locale).payment_.complete';
 import type {CheckoutAddress} from '~/components/checkout/address';
-import {createPaidOrder, stripeCall, type Env} from '~/lib/shopify-order.server';
+import {createPaidOrder, linesFromIntent, stripeCall, type Env} from '~/lib/shopify-order.server';
 
 type Result = {ok: boolean; message?: string; orderName?: string; email?: string};
 
@@ -54,7 +54,7 @@ export async function loader({request, context}: Route.LoaderArgs) {
       city: address.city, province: address.state, zip: address.zip,
       countryCode: 'US', phone: address.phone,
     },
-    lines: cart.lines.nodes.map((l) => ({variantId: l.merchandise.id, quantity: l.quantity})),
+    lines: linesFromIntent(pi),
   });
   if (!made.ok) {
     return {ok: false, message: `Payment received, but the order was not created: ${made.message}`} satisfies Result;

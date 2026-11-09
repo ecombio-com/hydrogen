@@ -70,7 +70,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
 
   const env = context.env as unknown as Record<string, string>;
   const linesMeta = cart.lines.nodes
-    .map((l) => `${l.merchandise.id.split('/').pop()}x${l.quantity}`)
+    .map((l) => `${l.merchandise.id.split('/').pop()}x${l.quantity}@${Math.round((Number(l.cost.totalAmount.amount) * 100) / Math.max(1, l.quantity))}`)
     .join(',');
   const totals = await calculateTotals(env, {
     discountCents,

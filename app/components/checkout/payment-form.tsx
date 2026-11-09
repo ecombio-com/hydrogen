@@ -14,8 +14,8 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
     let unmount: (() => void) | undefined;
     loadStripe(publishableKey).then((stripe) => {
       if (cancelled || !stripe || !mountRef.current) return;
-      const elements = stripe.elements({clientSecret, appearance: {theme: 'stripe'}});
-      const payment = elements.create('payment');
+      const elements = stripe.elements({clientSecret, appearance: {theme: 'stripe', labels: 'floating', variables: {borderRadius: '8px'}}});
+      const payment = elements.create('payment', {layout: {type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false}});
       payment.mount(mountRef.current);
       payment.on('ready', () => setReady(true));
       stripeRef.current = stripe;
