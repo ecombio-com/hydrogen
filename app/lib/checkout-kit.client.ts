@@ -65,7 +65,22 @@ async function ensureReady(): Promise<string | null> {
   return kitReady() ? url : null;
 }
 
+let completed = false;
+
+// Fallback: the complete event may not fire for popups. On close, ask the server if the cart became an order.
+function onClose() {
+  if (completed) return;
+  fetch('/api/checkout-status', {headers: {Accept: 'application/json'}, credentials: 'same-origin'})
+    .then((res) => (res.ok ? (res.json() as Promise<{completed?: boolean}>) : null))
+    .then((data) => {
+      if (data?.completed) window.location.assign('/payment/complete?kit=1');
+      else cached = null; // buyer closed without paying: fetch a fresh URL next time
+    })
+    .catch(() => undefined);
+}
+
 function onComplete(event: Event) {
+  completed = true;
   const orderId = (event as CustomEvent).detail?.checkout?.order?.id ?? null;
   window.dispatchEvent(new CustomEvent('checkout-kit:complete', {detail: {orderId}}));
   window.location.assign('/payment/complete?kit=1' + (orderId ? '&order=' + encodeURIComponent(String(orderId)) : ''));
@@ -85,6 +100,7 @@ function getElement(): KitElement {
   el.setAttribute('telemetry', KIT_TELEMETRY);
   el.addEventListener('complete', onComplete);
   el.addEventListener('error', onError);
+  el.addEventListener('close', onClose);
   document.body.appendChild(el);
   element = el;
   return el;

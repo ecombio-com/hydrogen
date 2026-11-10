@@ -16,6 +16,14 @@ export async function loader({request, context}: Route.LoaderArgs) {
     // Shopify hosted checkout: Checkout Kit sends the buyer here after Shopify creates the order.
     const kit = new URL(request.url).searchParams.get('kit') === '1';
     if (!kit || !context.session.get('kitCheckoutStarted')) return redirect('/cart');
+    // Only confirm once Shopify has turned the cart into an order (the cart is gone).
+    // One short retry covers the moment between payment and Shopify closing the cart.
+    let open = await context.cart.get();
+    if (open?.totalQuantity) {
+      await new Promise((r) => setTimeout(r, 1500));
+      open = await context.cart.get();
+    }
+    if (open?.totalQuantity) return redirect('/payment');
     context.session.unset('kitCheckoutStarted');
     const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
     context.session.unset('checkoutAddress');

@@ -77,7 +77,8 @@ export default {
       const response = await handleRequest(request);
 
       if (hydrogenContext.session.isPending) {
-        response.headers.set('Set-Cookie', await hydrogenContext.session.commit());
+        // append, not set: a route may already have set the cart cookie (e.g. new cart after checkout)
+        response.headers.append('Set-Cookie', await hydrogenContext.session.commit());
       }
 
       // Shopify URL redirects run only when the app has no page for the URL.

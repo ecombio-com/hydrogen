@@ -15,7 +15,9 @@ const ECOMBIO_ID = '1000184544';
 
 const CONFIGS: Record<string, StorefrontConfig> = {
   [ECOMBIO_ID]: {slug: 'ecombio', brand: 'ecombio', name: 'Ecombio', headerMenuHandle: 'main-menu', footerMenuHandle: 'footer'},
+  '1000185153': {slug: 'ecombio', brand: 'ecombio', name: 'Ecombio', headerMenuHandle: 'main-menu', footerMenuHandle: 'footer'}, // live store khkkyb-b8
   '1000179978': {slug: 'bicyclebio', brand: 'bicyclebio', name: 'BicycleBio', headerMenuHandle: 'bicyclebio-main', footerMenuHandle: 'bicyclebio-footer'},
+  '1000185154': {slug: 'bicyclebio', brand: 'bicyclebio', name: 'BicycleBio', headerMenuHandle: 'bicyclebio-main', footerMenuHandle: 'bicyclebio-footer'}, // live store khkkyb-b8
   '1000179976': {slug: 'scooterbio', brand: 'scooterbio', name: 'ScooterBio', headerMenuHandle: 'scooterbio-main', footerMenuHandle: 'scooterbio-footer', homeCollectionHandle: 'scooterbio-all'},
   '1000179977': {slug: 'skaterbio', brand: 'skaterbio', name: 'SkaterBio', headerMenuHandle: 'skaterbio-main', footerMenuHandle: 'skaterbio-footer', homeCollectionHandle: 'skaterbio-all'},
 };

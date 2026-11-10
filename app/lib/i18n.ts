@@ -65,7 +65,7 @@ const SKIP =
 // Unknown prefixes (e.g. /zz-zz) fall through so the 404 guard handles them.
 export function localeRedirect(request: Request): Response | null {
   // Checkout APIs are locale-free: skip the redirect.
-  if (/^\/api\/checkout(-url$|\/)/.test(new URL(request.url).pathname)) return null;
+  if (/^\/api\/checkout(-url$|-status$|\/)/.test(new URL(request.url).pathname)) return null;
   if (request.method !== 'GET' && request.method !== 'HEAD') return null;
   const url = new URL(request.url);
   const {pathname} = url;

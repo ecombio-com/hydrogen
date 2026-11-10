@@ -17,3 +17,8 @@ dev.log
 .env.checkout
 
 .env.bicyclebio
+.env.live
+.env.devstore
+.env.live.bicyclebio
+.env.live.full
+.env.live.bicyclebio.full
