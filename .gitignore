@@ -24,3 +24,5 @@ dev.log
 .env.live.bicyclebio.full
 
 .env.*
+
+.fuse_hidden*

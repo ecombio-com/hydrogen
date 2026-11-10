@@ -46,7 +46,7 @@ export function CartPageLine({line}: {line: CartLine}) {
     <li
       aria-busy={fetcher.state !== 'idle' || undefined}
       aria-label={title}
-      className="grid grid-cols-[auto_1fr] gap-5 rounded-ds-lg border border-border bg-background p-5 shadow-ds-drop-xs sm:grid-cols-[auto_1fr_auto]"
+      className="grid grid-cols-[auto_1fr] gap-5 rounded-ds-lg bg-background p-5 shadow-ds-drop-xs sm:grid-cols-[auto_1fr_auto]"
     >
       {href ? (
         <LocalizedLink href={href} className={`${imageClassName} cursor-pointer transition-opacity hover:opacity-80`}>
@@ -92,7 +92,7 @@ export function CartPageLine({line}: {line: CartLine}) {
       </div>
 
       <div className="col-span-2 grid content-start gap-2.5 sm:col-span-1 sm:justify-items-end sm:text-right">
-        <div className="grid gap-1 font-mono tabular-nums tracking-tight sm:justify-items-end">
+        <div className="grid gap-1 tabular-nums sm:justify-items-end">
           <span
             className="text-ds-medium font-medium text-foreground data-[pending=true]:text-muted-foreground"
             data-pending={!showPrice}
@@ -105,11 +105,11 @@ export function CartPageLine({line}: {line: CartLine}) {
           </span>
           {showPrice && currencyCode && savingsPercent > 0 ? (
             <span className="flex items-center gap-1.5">
-              <span className="inline-flex items-center rounded-full bg-positive/15 px-2 py-0.5 font-mono text-ds-small font-medium tabular-nums text-positive">
-                {savingsPercent}% OFF
+              <span className="inline-flex items-center rounded-ds-sm bg-positive/15 px-1.5 py-0.5 text-ds-small font-semibold tabular-nums text-positive">
+                Save <Money as="span" data={{amount: ((originalUnit - finalUnit) * quantity).toFixed(2), currencyCode}} />
               </span>
               <span className="text-ds-small text-muted-foreground line-through">
-                <Money as="span" data={{amount: String(originalUnit * quantity), currencyCode}} />
+                <Money as="span" data={{amount: (originalUnit * quantity).toFixed(2), currencyCode}} />
               </span>
             </span>
           ) : null}
@@ -162,7 +162,7 @@ export function CartPageLine({line}: {line: CartLine}) {
               type="submit"
               aria-label={`${COPY.remove} ${title}`}
               disabled={isOptimistic}
-              className="inline-flex h-9 cursor-pointer items-center rounded-ds-md border border-border px-3 text-ds-small font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 cursor-pointer items-center rounded-ds-md border px-3 text-ds-small font-medium transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50 border-destructive/60 text-destructive"
             >
               Remove
             </button>

@@ -7,9 +7,27 @@ import {redirect, useLoaderData, useParams, useRevalidator} from 'react-router';
 import {diffPrices, type PriceSnapshot} from '~/lib/price-watch';
 import type {Route} from './+types/($locale).payment';
 import type {CheckoutAddress} from '~/components/checkout/address';
-import {CheckoutSteps} from '~/components/checkout/steps';
+import {ChevronDown, Tag} from 'lucide-react';
+import {EmptyCart} from '~/components/checkout/empty-cart';
+import {DiscountForm} from '~/components/cart/discount-form';
+import {
+  AddressBlock,
+  CheckoutCard,
+  CheckoutProgress,
+  CheckoutShell,
+  ConsentNote,
+  Perks,
+  SecureNote,
+  SummaryDivider,
+  SummaryItems,
+  SummaryRow,
+  TrustBox,
+} from '~/components/checkout/checkout-shell';
+
 import {calculateTotals} from '~/lib/checkout-totals.server';
 import {useEffect, useState, type ComponentType} from 'react';
+
+type BillingAddress = Omit<CheckoutAddress, 'email' | 'phone'>;
 
 type PaymentFormProps = {publishableKey: string; clientSecret: string; total: string};
 
@@ -37,7 +55,7 @@ function money(cents: number, currency: string) {
 
 export async function loader({context, params}: Route.LoaderArgs) {
   const cart = await context.cart.get();
-  if (!cart?.totalQuantity) return redirect(localePath('/cart', params));
+  if (!cart?.totalQuantity) return {empty: true as const};
   const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
   if (!address) return redirect(localePath('/address', params));
 
@@ -46,7 +64,9 @@ export async function loader({context, params}: Route.LoaderArgs) {
   const totalCents = Math.round(Number(cart.cost.totalAmount.amount) * 100);
   const discountCents = Math.max(0, lineSum - totalCents);
   const discount = discountCents ? '-' + money(discountCents, currency) : '';
-  const lines = cart.lines.nodes.map((l) => ({id: l.id, title: l.merchandise.product.title, qty: l.quantity}));
+  const lines = cart.lines.nodes.map((l) => ({id: l.id, title: l.merchandise.product.title, qty: l.quantity, price: money(Math.round(Number(l.cost.totalAmount.amount) * 100), currency), image: l.merchandise.image ?? null}));
+  const billing = (context.session.get('checkoutBilling') as BillingAddress | undefined) ?? null;
+  const discountCodes = cart.discountCodes ?? [];
 
   // Compare against the prices saved when the shopper was on the address step.
   const snapshot = context.session.get('priceSnapshot') as PriceSnapshot | undefined;
@@ -64,6 +84,8 @@ export async function loader({context, params}: Route.LoaderArgs) {
       discount,
       total: money(totalCents, currency),
       address,
+      billing,
+      discountCodes,
       lines,
     };
   }
@@ -125,14 +147,21 @@ export async function loader({context, params}: Route.LoaderArgs) {
     shipping: totals.shipping === 0 ? 'Free' : money(totals.shipping, currency),
     tax: money(totals.tax, currency),
     address,
+    billing,
+    discountCodes,
     lines,
   };
 }
 
 export default function Payment() {
-  const d = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  if ('empty' in data) return <EmptyCart />;
+  return <PaymentView d={data} />;
+}
+
+function PaymentView({d}: {d: Exclude<ReturnType<typeof useLoaderData<typeof loader>>, {empty: true}>}) {
   const params = useParams();
-  const {address, lines, subtotal, discount, total} = d;
+  const {address, billing, lines, subtotal, discount, total} = d;
   const {revalidate} = useRevalidator();
   useEffect(() => {
     const onVisible = () => {
@@ -141,58 +170,86 @@ export default function Payment() {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [revalidate]);
+  const addressHref = localePath('/address', params);
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <CheckoutSteps current="Payment" />
+    <CheckoutShell
+      aside={
+        <>
+          <h2 className="text-ds-medium font-semibold text-foreground">Your order</h2>
+          <div className="grid gap-4 rounded-ds-lg bg-background p-5 shadow-ds-drop-xs">
+            <SummaryItems lines={lines} />
+            <SummaryDivider />
+            <SummaryRow label="Subtotal" value={subtotal} />
+            {discount ? <SummaryRow label="Discount" value={discount} positive /> : null}
+            {d.mode === 'stripe' ? (
+              <>
+                <SummaryRow label="Shipping" value={d.shipping} positive={d.shipping === 'Free'} />
+                <SummaryRow label="Tax" value={d.tax} />
+              </>
+            ) : (
+              <SummaryRow label="Shipping and tax" value="Next step" />
+            )}
+            <SummaryDivider />
+            <SummaryRow label={d.mode === 'stripe' ? 'Total' : 'Total before shipping and tax'} value={total} strong />
+            <ConsentNote />
+            <TrustBox />
+          </div>
+          <AddressBlock heading="Ship to" address={address} editHref={addressHref} />
+          <AddressBlock heading="Bill to" address={billing ?? address} editHref={addressHref} />
+        </>
+      }
+    >
+      <CheckoutProgress step="Payment" backHref="/address" />
+
       {d.priceChanges.length ? (
-        <div role="status" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+        <div role="status" className="rounded-ds-lg border border-amber-300 bg-amber-50 p-4 text-ds-small">
           <p className="font-semibold">Price update</p>
           {d.priceChanges.map((c) => (
-            <p key={c.id}>{c.title}: {c.from} → {c.to}</p>
+            <p key={c.id}>
+              {c.title}: {c.from} → {c.to}
+            </p>
           ))}
-          <p className="mt-1">The total below reflects the new price.</p>
+          <p className="mt-1">The total reflects the new price.</p>
         </div>
       ) : null}
-      <div className="grid gap-10 md:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <div className="rounded-lg border p-4 text-sm">
-            <p className="font-semibold">Ship to</p>
-            <p>{address.firstName} {address.lastName}, {address.address1}{address.address2 ? `, ${address.address2}` : ''}, {address.city}, {address.state} {address.zip}</p>
-            <a href={localePath('/address', params)} className="underline">Change</a>
-          </div>
+
+      <div className="grid gap-3">
+        <h1 className="text-ds-regular font-semibold text-foreground">Choose payment method</h1>
+        <CheckoutCard>
           {d.mode === 'stripe' ? (
             <ClientPaymentForm publishableKey={d.publishableKey} clientSecret={d.clientSecret} total={total} />
           ) : (
-            <div className="space-y-3">
-              <a href={d.checkoutUrl} data-checkout-kit className="flex h-12 w-full items-center justify-center rounded-md bg-black text-white">
+            <div className="grid gap-3">
+              <a
+                href={d.checkoutUrl}
+                data-checkout-kit
+                className="flex h-12 w-full items-center justify-center rounded-ds-md bg-foreground text-ds-regular font-semibold text-background hover:bg-foreground/90"
+              >
                 Continue to secure payment
               </a>
-              <p className="text-xs text-neutral-500">
-                Payment is processed securely by Shopify. Your address is already filled in. Shipping and tax are added on the next screen.
-              </p>
+              <SecureNote />
             </div>
           )}
-        </div>
-        <aside className="space-y-3 rounded-lg bg-neutral-50 p-6">
-          <h2 className="text-lg font-semibold">Order summary</h2>
-          {lines.map((l) => (<p key={l.id} className="text-sm">{l.qty} × {l.title}</p>))}
-          <div className="space-y-1 border-t pt-3 text-sm">
-            <p className="flex justify-between"><span>Subtotal</span><span>{subtotal}</span></p>
-            {discount ? <p className="flex justify-between"><span>Discount</span><span>{discount}</span></p> : null}
-            {d.mode === 'stripe' ? (
-              <>
-                <p className="flex justify-between"><span>Shipping</span><span>{d.shipping}</span></p>
-                <p className="flex justify-between"><span>Tax</span><span>{d.tax}</span></p>
-              </>
-            ) : (
-              <p className="flex justify-between"><span>Shipping and tax</span><span>Next step</span></p>
-            )}
-            <p className="flex justify-between border-t pt-2 font-semibold">
-              <span>{d.mode === 'stripe' ? 'Total' : 'Total before shipping and tax'}</span><span>{total}</span>
-            </p>
-          </div>
-        </aside>
+        </CheckoutCard>
       </div>
-    </div>
+
+      <details className="group rounded-ds-lg bg-background shadow-ds-drop-xs">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 text-ds-small font-medium text-foreground">
+          <span className="flex items-center gap-3">
+            <span className="flex size-8 items-center justify-center rounded-ds-md bg-positive/15 text-positive">
+              <Tag className="size-4" aria-hidden="true" />
+            </span>
+            Have a promo code?
+          </span>
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="px-5 pb-5">
+          <DiscountForm discountCodes={d.discountCodes} />
+        </div>
+      </details>
+
+      <Perks />
+    </CheckoutShell>
   );
 }

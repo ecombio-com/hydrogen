@@ -1,11 +1,32 @@
 import {forceCheckoutHost} from '~/lib/checkout-host';
 import type {OptimisticCart} from '@shopify/hydrogen';
-import {LockIcon} from 'lucide-react';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import {PaymentIcons} from '~/components/footer/payment-icons';
+import {
+  ConsentNote,
+  SummaryDivider,
+  SummaryItems,
+  SummaryRow,
+  TrustBox,
+  type SummaryLine,
+} from '~/components/checkout/checkout-shell';
 import {CartCheckout} from './checkout';
 import {DiscountForm} from './discount-form';
 import {CartTotal} from './total';
+
+function money(amount: string | number | undefined, currency: string | undefined) {
+  if (amount === undefined || !currency) return undefined;
+  return new Intl.NumberFormat('en-US', {style: 'currency', currency}).format(Number(amount));
+}
+
+export function cartSummaryLines(cart: OptimisticCart<CartApiQueryFragment | null> | null): SummaryLine[] {
+  return (cart?.lines?.nodes ?? []).map((line) => ({
+    id: line.id,
+    title: line.merchandise?.product?.title ?? 'Item',
+    qty: line.quantity,
+    price: money(line.cost?.totalAmount?.amount, line.cost?.totalAmount?.currencyCode),
+    image: line.merchandise?.image ?? null,
+  }));
+}
 
 export function CartPageSummary({
   cart,
@@ -14,26 +35,35 @@ export function CartPageSummary({
 }) {
   const hasLines = (cart?.lines?.nodes?.length ?? 0) > 0;
   if (!hasLines) return null;
+  const currency = cart?.cost?.subtotalAmount?.currencyCode;
   return (
-    <section
-      aria-labelledby="cart-summary-heading"
-      className="grid gap-5 rounded-ds-lg border border-border bg-background p-5 shadow-ds-drop-xs"
-    >
-      <h2 id="cart-summary-heading" className="text-ds-medium font-medium text-foreground">
+    <>
+      <h2 id="cart-summary-heading" className="text-ds-medium font-semibold text-foreground">
         Summary
       </h2>
-      <DiscountForm discountCodes={cart?.discountCodes ?? []} />
-      <div className="border-t border-border pt-5">
+      <section
+        aria-labelledby="cart-summary-heading"
+        className="grid gap-4 rounded-ds-lg bg-background p-5 shadow-ds-drop-xs"
+      >
+        <SummaryItems lines={cartSummaryLines(cart)} />
+        <SummaryDivider />
+        <SummaryRow label="Shipping" value="Free" positive />
+        <SummaryRow label="Subtotal" value={money(cart?.cost?.subtotalAmount?.amount, currency) ?? '—'} />
+        <SummaryRow label="Estimated taxes" value="Calculated at payment" />
+        <SummaryDivider />
         <CartTotal cart={cart} />
-      </div>
-      <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={hasLines} />
-      <div className="grid justify-items-center gap-2.5 rounded-ds-md border border-border p-2.5">
-        <PaymentIcons />
-        <p className="flex items-center gap-1.5 text-ds-small text-muted-foreground">
-          <LockIcon className="size-3.5" aria-hidden="true" />
-          Secure payment
-        </p>
-      </div>
-    </section>
+        <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={hasLines} />
+        <details className="group">
+          <summary className="cursor-pointer list-none text-ds-small font-medium text-foreground underline underline-offset-2">
+            Have a promo code?
+          </summary>
+          <div className="pt-3">
+            <DiscountForm discountCodes={cart?.discountCodes ?? []} />
+          </div>
+        </details>
+        <ConsentNote />
+        <TrustBox />
+      </section>
+    </>
   );
 }

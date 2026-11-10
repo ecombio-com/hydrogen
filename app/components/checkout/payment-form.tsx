@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {loadStripe, type Stripe, type StripeElements} from '@stripe/stripe-js';
+import {Lock} from 'lucide-react';
 
 export function PaymentForm({publishableKey, clientSecret, total}: {publishableKey: string; clientSecret: string; total: string}) {
   const navigate = useNavigate();
@@ -16,7 +17,20 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
     let unmount: (() => void) | undefined;
     loadStripe(publishableKey).then((stripe) => {
       if (cancelled || !stripe || !mountRef.current) return;
-      const elements = stripe.elements({clientSecret, appearance: {theme: 'stripe', labels: 'floating', variables: {borderRadius: '8px'}}});
+      const elements = stripe.elements({
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          labels: 'floating',
+          variables: {
+            borderRadius: '8px',
+            colorPrimary: '#0e1016',
+            colorText: '#0e1016',
+            colorDanger: '#cc0001',
+            fontFamily: 'Geist, system-ui, sans-serif',
+          },
+        },
+      });
       const payment = elements.create('payment', {layout: {type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false}});
       payment.mount(mountRef.current);
       payment.on('ready', () => setReady(true));
@@ -51,12 +65,26 @@ export function PaymentForm({publishableKey, clientSecret, total}: {publishableK
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="grid gap-5">
       <div ref={mountRef} className="min-h-48" />
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <button type="submit" disabled={!ready || busy} className="h-12 w-full rounded-md bg-black text-white disabled:opacity-50">
-        {busy ? 'Processing…' : `Pay ${total}`}
-      </button>
+      {error ? (
+        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+      <div className="grid gap-2">
+        <button
+          type="submit"
+          disabled={!ready || busy}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[#0e1016] text-base font-semibold text-white transition-colors hover:bg-black disabled:opacity-50"
+        >
+          <Lock className="size-4" aria-hidden="true" />
+          {busy ? 'Processing…' : `Pay ${total}`}
+        </button>
+        <p className="text-center text-xs text-neutral-500">
+          Secure payment. Your card details are encrypted and never touch our servers.
+        </p>
+      </div>
     </form>
   );
 }

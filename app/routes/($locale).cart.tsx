@@ -1,14 +1,14 @@
-import {Analytics, CartForm, useOptimisticCart, type CartQueryDataReturn} from '@shopify/hydrogen';
-import {cn} from 'cn';
+import {Analytics, CartForm, Money, useOptimisticCart, type CartQueryDataReturn} from '@shopify/hydrogen';
+import {Repeat, Truck} from 'lucide-react';
+import {CartCheckout} from '~/components/cart/checkout';
+import {CheckoutCard, CheckoutShell, Perks, SectionTitle} from '~/components/checkout/checkout-shell';
+import {EmptyCart} from '~/components/checkout/empty-cart';
 import {data, useLoaderData, type HeadersFunction} from 'react-router';
 import type {Route} from './+types/($locale).cart';
 import {CartPageLine} from '~/components/cart/cart-page-line';
 import {CartPageSummary} from '~/components/cart/cart-page-summary';
 import {COPY} from '~/components/cart/copy';
-import {buttonVariants} from '~/components/ui/button';
-import {Container} from '~/components/ui/container';
 import LocalizedLink from '~/components/ui/localized-link';
-import {Page} from '~/components/ui/page';
 import {getStorefrontConfig} from '~/lib/storefront-config';
 
 export const meta: Route.MetaFunction = () => [
@@ -131,44 +131,69 @@ export default function Cart() {
   const lines = cart?.lines?.nodes ?? [];
   const count = cart?.totalQuantity ?? 0;
 
-  if (!lines.length) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-5 px-5 py-10">
-        <h1 className="text-2xl sm:text-3xl">{COPY.empty}</h1>
-        <LocalizedLink href="/" className={cn(buttonVariants(), 'h-12 px-8')}>
-          {COPY.continueShopping}
-        </LocalizedLink>
-      </div>
-    );
-  }
+  if (!lines.length) return <EmptyCart />;
 
   return (
-    <Page className="bg-muted pb-10">
-      <Analytics.CartView />
-      <Container>
-        <div className="grid gap-5">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl">Your cart</h1>
-            <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-ds-regular text-background">
-              {count}
-            </span>
+    <CheckoutShell
+      aside={<CartPageSummary cart={cart} />}
+      footerBar={
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-ds-small text-muted-foreground">Cart total</p>
+            {cart?.cost?.totalAmount ? (
+              <Money as="p" data={cart.cost.totalAmount} className="text-ds-regular font-semibold" />
+            ) : null}
           </div>
-          <div className="grid gap-5 lg:grid-cols-12">
-            <div className="lg:col-span-8 xl:col-span-9">
-              <ul className="grid gap-5" aria-label={COPY.items}>
-                {lines.map((line) => (
-                  <CartPageLine key={line.id} line={line} />
-                ))}
-              </ul>
-            </div>
-            <aside className="lg:col-span-4 xl:col-span-3" aria-label="Order summary">
-              <div className="lg:sticky lg:top-20">
-                <CartPageSummary cart={cart} />
-              </div>
-            </aside>
+          <div className="w-1/2">
+            <CartCheckout checkoutUrl={cart?.checkoutUrl} hasLines />
           </div>
         </div>
-      </Container>
-    </Page>
+      }
+    >
+      <Analytics.CartView />
+      <div className="flex items-center gap-2.5">
+        <SectionTitle>Your cart</SectionTitle>
+        <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-ds-small font-semibold text-background">
+          {count}
+        </span>
+      </div>
+
+      <ul className="grid gap-4" aria-label={COPY.items}>
+        {lines.map((line) => (
+          <CartPageLine key={line.id} line={line} />
+        ))}
+      </ul>
+
+      <div className="flex items-center justify-between gap-3 rounded-ds-lg bg-positive/10 px-4 py-3 text-ds-small">
+        <span className="flex items-center gap-2 font-medium text-foreground">
+          <Truck className="size-4 text-positive" aria-hidden="true" />
+          Free standard shipping
+        </span>
+        <LocalizedLink href="/policies/shipping-policy" className="text-foreground underline underline-offset-2">
+          Delivery info
+        </LocalizedLink>
+      </div>
+
+      <CheckoutCard className="border border-[var(--color-secondary-200)] bg-[var(--color-secondary-50)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="grid gap-1">
+            <p className="flex items-center gap-2 text-ds-small font-semibold text-[var(--color-secondary-700)]">
+              <Repeat className="size-4" aria-hidden="true" />
+              Save on today&apos;s purchase
+            </p>
+            <p className="text-ds-regular font-semibold text-foreground">Got an old ride to trade in?</p>
+            <p className="text-ds-small text-muted-foreground">Trade it in and put the value toward your new ride.</p>
+          </div>
+          <LocalizedLink
+            href="/pages/trade-in"
+            className="rounded-ds-md border border-foreground bg-background px-4 py-2 text-ds-small font-medium text-foreground hover:bg-muted"
+          >
+            See trade-in value
+          </LocalizedLink>
+        </div>
+      </CheckoutCard>
+
+      <Perks />
+    </CheckoutShell>
   );
 }
