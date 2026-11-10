@@ -22,3 +22,5 @@ dev.log
 .env.live.bicyclebio
 .env.live.full
 .env.live.bicyclebio.full
+
+.env.*
