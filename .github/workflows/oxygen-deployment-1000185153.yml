@@ -32,12 +32,8 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 12
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build and Publish to Oxygen
         run: npx shopify hydrogen deploy
