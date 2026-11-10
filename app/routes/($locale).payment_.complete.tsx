@@ -31,6 +31,7 @@ export async function loader({request, context}: Route.LoaderArgs) {
     const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
     context.session.unset('checkoutAddress');
     context.session.unset('checkoutBilling');
+    context.session.unset('deliveryMethod');
     const fresh = await context.cart.create({});
     const headers = fresh.cart?.id ? context.cart.setCartId(fresh.cart.id) : undefined;
     return data({ok: true, email: address?.email, firstName: address?.firstName} satisfies Result, {headers});
@@ -75,6 +76,7 @@ export async function loader({request, context}: Route.LoaderArgs) {
   // 5. Clear checkout
   context.session.unset('checkoutAddress');
     context.session.unset('checkoutBilling');
+    context.session.unset('deliveryMethod');
   context.session.unset('paymentIntentId');
   const fresh = await context.cart.create({});
   const headers = fresh.cart?.id ? context.cart.setCartId(fresh.cart.id) : undefined;

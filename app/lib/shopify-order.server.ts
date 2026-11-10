@@ -1,3 +1,4 @@
+import {getShippingOption} from '~/lib/shipping-options';
 import {VERSIONS} from '~/lib/versions';
 const API_VERSION = VERSIONS.shopifyAdmin;
 export type Env = Record<string, string>;
@@ -141,7 +142,7 @@ export async function createPaidOrder(
         lineItems: input.lines.map((l) => ({variantId: l.variantId, quantity: l.quantity, ...(l.unitCents != null ? {priceSet: moneyBag(l.unitCents)} : {})})),
         shippingAddress: input.mailing,
         billingAddress: input.mailing,
-        shippingLines: [{title: shipCents ? 'Shipping' : 'Free shipping', code: 'standard', priceSet: moneyBag(shipCents)}],
+        shippingLines: [{title: getShippingOption(pi.metadata?.shipping_method).title, code: getShippingOption(pi.metadata?.shipping_method).id, priceSet: moneyBag(shipCents)}],
         taxesIncluded: false,
         taxLines: taxCents && baseCents > 0 ? [{title: 'Sales tax', rate: taxCents / baseCents, priceSet: moneyBag(taxCents)}] : [],
         discountCode: discCents ? {itemFixedDiscountCode: {code: 'Discount', amountSet: moneyBag(discCents)}} : undefined,

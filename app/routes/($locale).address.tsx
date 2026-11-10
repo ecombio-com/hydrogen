@@ -2,7 +2,7 @@ import {localePath} from '~/lib/locale-path';
 import {getStorefrontConfig} from '~/lib/storefront-config';
 import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {Form, redirect, useActionData, useLoaderData, useNavigation} from 'react-router';
-import {Truck} from 'lucide-react';
+import {Truck, Zap} from 'lucide-react';
 import {useState} from 'react';
 import type {Route} from './+types/($locale).address';
 import {
@@ -26,6 +26,7 @@ import {
   type SummaryLine,
 } from '~/components/checkout/checkout-shell';
 import {snapshotPrices} from '~/lib/price-watch';
+import {SHIPPING_OPTIONS, getShippingOption, shippingLabel} from '~/lib/shipping-options';
 import {EmptyCart} from '~/components/checkout/empty-cart';
 
 type BillingAddress = Omit<CheckoutAddress, 'email' | 'phone'>;
@@ -67,6 +68,10 @@ export async function loader({context, params}: Route.LoaderArgs) {
   return {
     address: (context.session.get('checkoutAddress') as CheckoutAddress | undefined) ?? null,
     billing: (context.session.get('checkoutBilling') as BillingAddress | undefined) ?? null,
+    delivery: getShippingOption(context.session.get('deliveryMethod')).id,
+    ownPayment: stripeCheckoutEnabled(context.env),
+    baseAmount: Number(cart.cost.totalAmount.amount),
+    currency,
     lines,
     subtotal: money(Number(cart.cost.subtotalAmount.amount), currency),
     total: money(Number(cart.cost.totalAmount.amount), currency),
@@ -145,6 +150,7 @@ export async function action({request, context, params}: Route.ActionArgs) {
   }
 
   context.session.set('checkoutAddress', address);
+  context.session.set('deliveryMethod', getShippingOption(form.get('delivery')).id);
   if (billing) context.session.set('checkoutBilling', billing);
   else context.session.unset('checkoutBilling');
   return redirect(localePath('/payment', params));
@@ -220,7 +226,10 @@ export default function Address() {
 }
 
 function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<typeof loader>>, {empty: true}>}) {
-  const {address, billing, lines, subtotal, total} = data;
+  const {address, billing, lines, subtotal, delivery, baseAmount, currency, ownPayment} = data;
+  const [deliveryId, setDeliveryId] = useState<string>(delivery);
+  const chosen = getShippingOption(deliveryId);
+  const estTotal = new Intl.NumberFormat('en-US', {style: 'currency', currency}).format(baseAmount + chosen.cents / 100);
   const result = useActionData<typeof action>();
   const navigation = useNavigation();
   const busy = navigation.state !== 'idle';
@@ -238,11 +247,15 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
           <div className="grid gap-4 rounded-ds-lg bg-background p-5 shadow-ds-drop-xs">
             <SummaryItems lines={lines} />
             <SummaryDivider />
-            <SummaryRow label="Shipping" value="Free" positive />
             <SummaryRow label="Subtotal" value={subtotal} />
+            {ownPayment ? (
+              <SummaryRow label={chosen.title} value={shippingLabel(chosen.cents)} positive={chosen.cents === 0} />
+            ) : (
+              <SummaryRow label="Shipping" value="Calculated at payment" />
+            )}
             <SummaryRow label="Estimated taxes" value="Calculated at payment" />
             <SummaryDivider />
-            <SummaryRow label="Total" value={total} strong />
+            {ownPayment ? <SummaryRow label="Estimated total" value={estTotal} strong /> : null}
             <ConsentNote />
             <TrustBox />
           </div>
@@ -339,26 +352,47 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
           </div>
         ) : null}
 
-        {/* ---- Delivery method ---- */}
+        {/* ---- Delivery method (our own payment only; Shopify checkout picks shipping itself) ---- */}
+        {ownPayment ? (
         <div className="grid gap-3">
           <h2 className="text-ds-regular font-semibold text-foreground">Select delivery method</h2>
           <CheckoutCard>
             <SummaryItems lines={lines.map((l) => ({...l, price: undefined}))} />
-            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-ds-md border-2 border-foreground p-4">
-              <span className="flex items-center gap-3">
-                <input type="radio" name="delivery" value="standard" defaultChecked className="size-4 accent-foreground" />
-                <span className="grid">
-                  <span className="text-ds-small font-semibold text-foreground">Standard shipping</span>
-                  <span className="flex items-center gap-1.5 text-ds-small text-muted-foreground">
-                    <Truck className="size-3.5" aria-hidden="true" />
-                    Delivery dates shown after your order ships
-                  </span>
-                </span>
-              </span>
-              <span className="text-ds-small font-semibold text-positive">Free</span>
-            </label>
+            <div role="radiogroup" aria-label="Delivery method" className="grid gap-3">
+              {SHIPPING_OPTIONS.map((o) => {
+                const on = deliveryId === o.id;
+                return (
+                  <label
+                    key={o.id}
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-ds-md p-4 transition-colors ${on ? 'border-2 border-foreground' : 'border border-border hover:border-foreground/40'}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="delivery"
+                        value={o.id}
+                        checked={on}
+                        onChange={() => setDeliveryId(o.id)}
+                        className="size-4 accent-foreground"
+                      />
+                      <span className="grid">
+                        <span className="text-ds-small font-semibold text-foreground">{o.title}</span>
+                        <span className="flex items-center gap-1.5 text-ds-small text-muted-foreground">
+                          {o.id === 'expedited' ? <Zap className="size-3.5" aria-hidden="true" /> : <Truck className="size-3.5" aria-hidden="true" />}
+                          Arrives in {o.eta}
+                        </span>
+                      </span>
+                    </span>
+                    <span className={`text-ds-small font-semibold ${o.cents === 0 ? 'text-positive' : 'text-foreground'}`}>
+                      {shippingLabel(o.cents)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </CheckoutCard>
         </div>
+        ) : null}
 
         {result?.error ? (
           <p role="alert" className="rounded-ds-md bg-destructive/10 px-4 py-3 text-ds-small text-destructive">

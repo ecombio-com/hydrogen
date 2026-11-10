@@ -25,6 +25,7 @@ import {
 } from '~/components/checkout/checkout-shell';
 
 import {calculateTotals} from '~/lib/checkout-totals.server';
+import {getShippingOption} from '~/lib/shipping-options';
 import {useEffect, useState, type ComponentType} from 'react';
 
 type BillingAddress = Omit<CheckoutAddress, 'email' | 'phone'>;
@@ -94,8 +95,10 @@ export async function loader({context, params}: Route.LoaderArgs) {
   const linesMeta = cart.lines.nodes
     .map((l) => `${l.merchandise.id.split('/').pop()}x${l.quantity}@${Math.round((Number(l.cost.totalAmount.amount) * 100) / Math.max(1, l.quantity))}`)
     .join(',');
+  const delivery = getShippingOption(context.session.get('deliveryMethod'));
   const totals = await calculateTotals(env, {
     discountCents,
+    shippingCents: delivery.cents,
     currency: currency.toLowerCase(),
     address,
     lines: cart.lines.nodes.map((l) => ({
@@ -112,6 +115,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
     'metadata[storefront_id]': getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug,
     ...(linesMeta.length <= 5000 ? Object.fromEntries((linesMeta.match(/.{1,500}/g) ?? []).map((c, i) => [i === 0 ? 'metadata[lines]' : `metadata[lines_${i + 1}]`, c])) : {}),
     'metadata[shipping_cents]': String(totals.shipping),
+    'metadata[shipping_method]': delivery.id,
     'metadata[tax_cents]': String(totals.tax),
     'metadata[discount_cents]': String(discountCents),
     'hooks[inputs][tax][calculation]': totals.calculationId,
@@ -145,6 +149,7 @@ export async function loader({context, params}: Route.LoaderArgs) {
     subtotal: money(totals.subtotal, currency),
     discount,
     shipping: totals.shipping === 0 ? 'Free' : money(totals.shipping, currency),
+    shippingTitle: delivery.title,
     tax: money(totals.tax, currency),
     address,
     billing,
@@ -184,7 +189,7 @@ function PaymentView({d}: {d: Exclude<ReturnType<typeof useLoaderData<typeof loa
             {discount ? <SummaryRow label="Discount" value={discount} positive /> : null}
             {d.mode === 'stripe' ? (
               <>
-                <SummaryRow label="Shipping" value={d.shipping} positive={d.shipping === 'Free'} />
+                <SummaryRow label={d.shippingTitle} value={d.shipping} positive={d.shipping === 'Free'} />
                 <SummaryRow label="Tax" value={d.tax} />
               </>
             ) : (

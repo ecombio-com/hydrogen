@@ -12,6 +12,7 @@ export async function calculateTotals(
   input: {
     currency: string;
     discountCents?: number;
+    shippingCents?: number;
     address: {address1: string; city: string; state: string; zip: string};
     lines: {reference: string; cents: number}[];
   },
@@ -25,6 +26,7 @@ export async function calculateTotals(
     left -= take;
     return {reference: l.reference, cents: l.cents - take};
   });
+  const shippingCents = input.shippingCents ?? SHIPPING_CENTS;
   const body = new URLSearchParams({
     currency: input.currency,
     'customer_details[address][line1]': input.address.address1,
@@ -33,7 +35,7 @@ export async function calculateTotals(
     'customer_details[address][postal_code]': input.address.zip,
     'customer_details[address][country]': 'US',
     'customer_details[address_source]': 'shipping',
-    'shipping_cost[amount]': String(SHIPPING_CENTS),
+    'shipping_cost[amount]': String(shippingCents),
   });
   lines.forEach((l, i) => {
     body.set(`line_items[${i}][amount]`, String(l.cents));
@@ -49,7 +51,7 @@ export async function calculateTotals(
   if (!res.ok || !json.id) throw new Response(json.error?.message ?? 'Tax calculation failed', {status: 502});
   return {
     subtotal: input.lines.reduce((s, l) => s + l.cents, 0),
-    shipping: SHIPPING_CENTS,
+    shipping: shippingCents,
     tax: json.tax_amount_exclusive ?? 0,
     total: json.amount_total ?? 0,
     calculationId: json.id,

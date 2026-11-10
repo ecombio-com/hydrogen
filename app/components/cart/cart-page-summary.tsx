@@ -47,7 +47,7 @@ export function CartPageSummary({
       >
         <SummaryItems lines={cartSummaryLines(cart)} />
         <SummaryDivider />
-        <SummaryRow label="Shipping" value="Free" positive />
+        <SummaryRow label="Shipping" value="Free standard" positive />
         <SummaryRow label="Subtotal" value={money(cart?.cost?.subtotalAmount?.amount, currency) ?? '—'} />
         <SummaryRow label="Estimated taxes" value="Calculated at payment" />
         <SummaryDivider />
