@@ -324,14 +324,14 @@ function ReviewCard({
               aria-label={
                 "Open photo " + (i + 1) + " of " + photos.length + " from " + name + "'s review"
               }
-              className="relative block size-24 cursor-zoom-in overflow-hidden rounded-md bg-neutral-100 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-none"
+              className="relative block size-32 cursor-zoom-in overflow-hidden rounded-md bg-neutral-100 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-black focus-visible:outline-none"
             >
               <Image
                 src={photo.thumb}
                 alt={"Photo from " + name + "'s review"}
                 fill
                 unoptimized
-                sizes="96px"
+                sizes="128px"
                 className="object-cover"
               />
             </button>
