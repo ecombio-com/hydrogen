@@ -508,7 +508,7 @@ export function ReviewsBrowser({
     () =>
       reviews
         .filter((r) => photosOf(r).length > 0)
-        .sort((a, b) => b.votes_up - a.votes_up || time(b) - time(a)),
+        .sort((a, b) => b.score - a.score || b.votes_up - a.votes_up || time(b) - time(a)),
     [reviews],
   );
   const topPhotoReviews = useMemo(() => photoReviews.slice(0, TOP_PHOTO_REVIEWS), [photoReviews]);
