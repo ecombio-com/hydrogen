@@ -31,7 +31,7 @@ export default async function handleRequest(
       'https://maps.googleapis.com',
     ],
     mediaSrc: ["'self'", 'https://cdn.shopify.com'],
-    imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com', 'https://*.google-analytics.com', 'https://*.stripe.com'],
+    imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com', 'https://*.google-analytics.com', 'https://*.stripe.com', 'https://*.yotpo.com', 'https://*.kaltura.com'],
   });
 
   const body = await renderToReadableStream(

@@ -1,0 +1,192 @@
+=== A. Hosted Yotpo widgets / scripts ===
+
+=== B. Yotpo lines outside app\@yotpo ===
+app\components\collections\collection-sections.tsx:6: import {CollectionReviews, type YotpoCollectionReviews} from '~/@yotpo';
+app\components\collections\collection-sections.tsx:46: reviews: Promise<YotpoCollectionReviews | null>;
+app\components\collections\hub-page.tsx:8: import type {YotpoCollectionReviews} from '~/@yotpo';
+app\components\collections\hub-page.tsx:86: reviews: Promise<YotpoCollectionReviews | null>;
+app\components\collections\hub-reviews.tsx:5: import type {YotpoCollectionReviews} from '~/@yotpo';
+app\components\collections\hub-reviews.tsx:11: type Review = YotpoCollectionReviews['reviews'][number];
+app\components\collections\hub-reviews.tsx:17: function Reels({data}: {data: YotpoCollectionReviews | null}) {
+app\components\collections\hub-reviews.tsx:63: export function HubReviews({reviews}: {reviews: Promise<YotpoCollectionReviews | null>}) {
+app\components\product-card\stars.tsx:3: import {Star} from '../../@yotpo/components/star';
+app\components\product-card\stars.tsx:15: // below (Star then defaults to yotpoConfig.brand.starsColor).
+app\lib\collection-extras.server.ts:5: import type {***, YotpoCollectionReviews} from '~/@yotpo';
+app\lib\collection-extras.server.ts:6: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\collection-extras.server.ts:13: type Ctx = {storefront: Storefront; yotpo: YotpoClient};
+app\lib\collection-extras.server.ts:19: const REVIEW_CANDIDATES_LIMIT = 60; // caps Yotpo lookups per cold render
+app\lib\collection-extras.server.ts:107: export async function loadCollectionDeals({storefront, yotpo}: Ctx, handle: string) {
+app\lib\collection-extras.server.ts:115: if (picked.length > 0) return withRatings(yotpo, picked);
+app\lib\collection-extras.server.ts:134: return top.length > 0 ? withRatings(yotpo, top) : [];
+app\lib\collection-extras.server.ts:137: // Yotpo answers one product at a time, so reviews come from the collection's reviewed products.
+app\lib\collection-extras.server.ts:139: {storefront, yotpo}: Ctx,
+app\lib\collection-extras.server.ts:141: ): Promise<YotpoCollectionReviews | null> {
+app\lib\collection-extras.server.ts:152: const ratings = await yotpo.getProductCardRatings(candidates.slice(0, REVIEW_CANDIDATES_LIMIT).map((candidate) => candidate.id));
+app\lib\collection-extras.server.ts:153: const reviewed: ***[] = candidates
+app\lib\collection-extras.server.ts:157: return yotpo.getCollectionReviews(reviewed);
+app\lib\collection-hub.server.ts:3: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\collection-hub.server.ts:16: type HubContext = {storefront: Storefront; yotpo: YotpoClient};
+app\lib\collection-hub.server.ts:229: export async function loadHub({storefront, yotpo}: HubContext, handle: string) {
+app\lib\collection-hub.server.ts:255: ? withRatings(yotpo, [featuredNode])
+app\lib\context.ts:7: import {createYotpoClient, type YotpoClient} from '~/@yotpo/client.server';
+app\lib\context.ts:20: yotpo: YotpoClient;
+app\lib\context.ts:54: const yotpo = createYotpoClient({env, cache, waitUntil, request});
+app\lib\context.ts:70: {...additionalContext, yotpo, algolia},
+app\lib\home-showcase.server.ts:4: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\home-showcase.server.ts:35: yotpo?: YotpoClient,
+app\lib\home-showcase.server.ts:44: if (!yotpo) return nodes.map((node) => toProductCardData(node));
+app\lib\home-showcase.server.ts:45: // Stars are a bonus: if Yotpo fails, show the cards without them.
+app\lib\home-showcase.server.ts:47: return await withRatings(yotpo, nodes);
+app\lib\home-showcase.server.ts:62: yotpo?: YotpoClient,
+app\lib\home-showcase.server.ts:66: tabs.map(async (tab) => ({tab, products: await getShowcaseTabProducts(storefront, tab.handle, yotpo)})),
+app\lib\home.server.ts:113: // ---------- Yotpo story reviews (optional) ----------
+app\lib\ratings.server.ts:2: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\ratings.server.ts:7: export async function withRatings(yotpo: YotpoClient, nodes: CardNode[]) {
+app\lib\ratings.server.ts:9: const ratings = await yotpo.getProductCardRatings(nodes.map((node) => numeric(node.id)));
+app\routes\($locale)._index.tsx:49: const {storefront, yotpo} = context;
+app\routes\($locale)._index.tsx:73: yotpo.getProductReviews(id) as unknown as Promise<{reviews: ReviewLike[]} | null>,
+app\routes\($locale)._index.tsx:75: getHomeShowcaseContent(storefront).then((content) => getShowcaseSection(storefront, content, yotpo)),
+app\routes\($locale).api.showcase.$handle.tsx:8: return {handle, products: await getShowcaseTabProducts(context.storefront, handle, context.yotpo)};
+app\routes\($locale).api.yotpo.reviews.tsx:1: // Path: app/routes/($locale).api.yotpo.reviews.tsx
+app\routes\($locale).api.yotpo.reviews.tsx:2: // Receives the review form, validates it, forwards it to Yotpo.
+app\routes\($locale).api.yotpo.reviews.tsx:7: import type {Route} from './+types/($locale).api.yotpo.reviews';
+app\routes\($locale).api.yotpo.reviews.tsx:14: query YotpoReviewProduct(
+app\routes\($locale).api.yotpo.reviews.tsx:97: const ok = await context.yotpo.submitReview({
+app\routes\($locale).api.yotpo.reviews.tsx:113: console.error('Yotpo review route error:', err);
+app\routes\($locale).collections.$handle.tsx:115: const products = await withRatings(context.yotpo, collection.products.nodes);
+app\routes\($locale).products.$handle.tsx:3: import {ProductReviews, StarRating} from '~/@yotpo';
+app\routes\($locale).products.$handle.tsx:124: const reviews = args.context.yotpo.getProductReviews(productId);
+server.ts:13: '/api/yotpo/webhook',
+
+=== C. Importers of @yotpo ===
+app\components\collections\collection-sections.tsx:6: import {CollectionReviews, type YotpoCollectionReviews} from '~/@yotpo';
+app\components\collections\hub-page.tsx:8: import type {YotpoCollectionReviews} from '~/@yotpo';
+app\components\collections\hub-reviews.tsx:5: import type {YotpoCollectionReviews} from '~/@yotpo';
+app\components\product-card\stars.tsx:3: import {Star} from '../../@yotpo/components/star';
+app\lib\collection-extras.server.ts:5: import type {***, YotpoCollectionReviews} from '~/@yotpo';
+app\lib\collection-extras.server.ts:6: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\collection-hub.server.ts:3: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\context.ts:7: import {createYotpoClient, type YotpoClient} from '~/@yotpo/client.server';
+app\lib\home-showcase.server.ts:4: import type {YotpoClient} from '~/@yotpo/client.server';
+app\lib\ratings.server.ts:2: import type {YotpoClient} from '~/@yotpo/client.server';
+app\routes\($locale).products.$handle.tsx:3: import {ProductReviews, StarRating} from '~/@yotpo';
+
+=== D. @yotpo public exports ===
+// Path: app/@yotpo/index.ts
+// Browser-safe surface. Do NOT re-export client.server.ts here; import it
+// only from loaders, actions and app/lib/context.ts.
+
+export {StarRating} from './components/star-ratings';
+export {ProductReviews} from './components/reviews-widget';
+export {CollectionReviews} from './components/collection-reviews';
+
+export type {
+YotpoReview,
+YotpoBottomline,
+YotpoProductReviews,
+YotpoRatingSummary,
+YotpoCollectionReview,
+***,
+YotpoCollectionReviews,
+} from './types';
+
+=== E. Server-side Yotpo calls ===
+app\@yotpo\client.server.ts:3: // Failures are honest: the cached function throws (errors are never cached),
+app\@yotpo\client.server.ts:4: // public methods catch and return null, and components render nothing on null.
+app\@yotpo\client.server.ts:6: import {CacheCustom, createWithCache} from '@shopify/hydrogen';
+app\@yotpo\client.server.ts:51: cache: Cache;
+app\@yotpo\client.server.ts:56: const withCache = createWithCache({
+app\@yotpo\client.server.ts:57: cache: args.cache,
+app\@yotpo\client.server.ts:61: const strategy = CacheCustom({
+app\@yotpo\client.server.ts:68: appKey: string,
+app\@yotpo\client.server.ts:73: return withCache.run(
+app\@yotpo\client.server.ts:75: cacheKey: ['yotpo-reviews', productId, String(page), String(perPage)],
+app\@yotpo\client.server.ts:76: cacheStrategy: strategy,
+app\@yotpo\client.server.ts:77: shouldCacheResult: () => true,
+app\@yotpo\client.server.ts:81: `${config.apiBaseUrl}/${encodeURIComponent(appKey)}` +
+app\@yotpo\client.server.ts:82: `/products/${encodeURIComponent(productId)}/reviews.json?page=${page}&per_page=${perPage}`;
+app\@yotpo\client.server.ts:83: const res = await fetch(url, {
+app\@yotpo\client.server.ts:92: const bottomline = json.response?.bottomline;
+app\@yotpo\client.server.ts:93: if (!bottomline) throw new Error('Yotpo response missing bottomline');
+app\@yotpo\client.server.ts:95: const dist = bottomline.star_distribution;
+app\@yotpo\client.server.ts:105: bottomline: {
+app\@yotpo\client.server.ts:106: total_review: bottomline.total_review ?? 0,
+app\@yotpo\client.server.ts:107: average_score: bottomline.average_score ?? 0,
+app\@yotpo\client.server.ts:121: /** Reviews + bottomline for one product, or null if unconfigured/unreachable. productId is the Shopify numeric ID, not the GID. */
+app\@yotpo\client.server.ts:126: if (!config.appKey) return null;
+app\@yotpo\client.server.ts:129: return await fetchProductReviews(config.appKey, productId, page, perPage);
+app\@yotpo\client.server.ts:136: /** Score and count only. Same args as getProductReviews, so it shares the cache entry. */
+app\@yotpo\client.server.ts:143: averageScore: data.bottomline.average_score,
+app\@yotpo\client.server.ts:144: totalReviews: data.bottomline.total_review,
+app\@yotpo\client.server.ts:158: count: data.bottomline.total_review,
+app\@yotpo\client.server.ts:159: score: data.bottomline.average_score,
+app\@yotpo\client.server.ts:172: if (!config.appKey || products.length === 0) return null;
+app\@yotpo\client.server.ts:185: const {average_score, star_distribution, total_review} = data.bottomline;
+app\@yotpo\client.server.ts:191: const newest = [...data.reviews].sort(
+app\@yotpo\client.server.ts:205: bottomline: {
+app\@yotpo\client.server.ts:213: /** POST /v1/widget/reviews. Returns true on success. Never cached. */
+app\@yotpo\client.server.ts:215: if (!config.appKey) return false;
+app\@yotpo\client.server.ts:221: const res = await fetch(config.createReviewUrl, {
+app\@yotpo\client.server.ts:222: method: 'POST',
+app\@yotpo\client.server.ts:226: appkey: config.appKey,
+app\@yotpo\config.ts:3: // The app key is a public Yotpo identifier, not a secret.
+app\@yotpo\config.ts:7: PUBLIC_YOTPO_APP_KEY?: string;
+app\@yotpo\config.ts:12: appKey: env.PUBLIC_YOTPO_APP_KEY || null,
+app\@yotpo\config.ts:15: apiBaseUrl: 'https://api.yotpo.com/v1/widget',
+app\@yotpo\config.ts:16: createReviewUrl: 'https://api.yotpo.com/v1/widget/reviews',
+
+=== F. Review submission ===
+app\@yotpo\components\review-form.tsx:5: // Posts to /api/yotpo/reviews, which validates and forwards to Yotpo.
+app\@yotpo\components\review-form.tsx:50: const form = new FormData(formEl);
+app\@yotpo\components\review-form.tsx:55: const res = await fetch("/api/yotpo/reviews", {
+app\@yotpo\components\review-form.tsx:56: method: "POST",
+
+=== G. JSON-LD ratings (own rich snippets) ===
+app\components\schema\site-schema.tsx:76: <script key={schema['@type']} type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(schema)}} />
+
+=== H. CSP / headers ===
+app\entry.server.tsx:5: createContentSecurityPolicy,
+app\entry.server.tsx:17: const {nonce, header, NonceProvider} = createContentSecurityPolicy({
+server.ts:13: '/api/yotpo/webhook',
+
+=== I. Where reviews/stars render ===
+Product page       2 hits
+      app\routes\($locale).products.$handle.tsx:3
+      app\routes\($locale).products.$handle.tsx:124
+Collection pages   11 hits
+      app\@yotpo\components\collection-reviews.tsx:1
+      app\@yotpo\components\collection-reviews.tsx:3
+      app\@yotpo\components\collection-reviews.tsx:5
+      app\@yotpo\components\collection-reviews.tsx:6
+Hub reviews        4 hits
+      app\components\collections\hub-reviews.tsx:5
+      app\components\collections\hub-reviews.tsx:11
+      app\components\collections\hub-reviews.tsx:17
+      app\components\collections\hub-reviews.tsx:63
+Product cards      6 hits
+      app\components\product-card\stars.tsx:3
+      app\components\product-card\stars.tsx:15
+      app\lib\ratings.server.ts:1
+      app\lib\ratings.server.ts:2
+Home               3 hits
+      app\routes\($locale)._index.tsx:49
+      app\routes\($locale)._index.tsx:73
+      app\routes\($locale)._index.tsx:75
+
+=== J. Packages / extensions ===
+extensions folder: False
+
+=== K. Klaviyo / review-data marketing code ===
+
+=== L. Pro-feature specifics inside @yotpo ===
+app\@yotpo\config.ts:3: // The app key is a public Yotpo identifier, not a secret.
+app\@yotpo\components\reviews-browser.tsx:24: import { UgcMediaViewer } from "./ugc-media";
+app\@yotpo\components\reviews-browser.tsx:738: <UgcMediaViewer
+app\@yotpo\components\ugc-media.tsx:1: // Path: @yotpo/components/ugc-media.tsx
+app\@yotpo\components\ugc-media.tsx:3: // Side viewer for customer photos (UGC media). Opens from a photo in the top strip or on a review
+app\@yotpo\components\ugc-media.tsx:20: export type UgcReview = YotpoReview & { product?: YotpoCollectionReview["product"] };
+app\@yotpo\components\ugc-media.tsx:26: function photosOf(review: UgcReview): Photo[] {
+app\@yotpo\components\ugc-media.tsx:47: function ReviewDetails({ review }: { review: UgcReview }) {
+app\@yotpo\components\ugc-media.tsx:117: export function UgcMediaViewer({
+app\@yotpo\components\ugc-media.tsx:125: reviews: UgcReview[];
+app\@yotpo\components\ugc-media.tsx:198: <div className="fixed inset-0 z-50" data-ugc-media="">

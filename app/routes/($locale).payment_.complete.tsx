@@ -54,6 +54,7 @@ export async function loader({request, context}: Route.LoaderArgs) {
   // 3. Match payment to this cart
   const cart = await context.cart.get();
   const address = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
+  const billing = context.session.get('checkoutBilling') as Omit<CheckoutAddress, 'email' | 'phone'> | undefined;
   if (!cart || cart.id !== pi.metadata?.cart_id || !address) {
     return {ok: false, message: 'Payment received, but the cart or address is missing. We will contact you.'} satisfies Result;
   }
@@ -67,6 +68,9 @@ export async function loader({request, context}: Route.LoaderArgs) {
       city: address.city, province: address.state, zip: address.zip,
       countryCode: 'US', phone: address.phone,
     },
+    billing: billing
+      ? {firstName: billing.firstName, lastName: billing.lastName, address1: billing.address1, address2: billing.address2 || undefined, city: billing.city, province: billing.state, zip: billing.zip, countryCode: 'US'}
+      : undefined,
     lines: linesFromIntent(pi),
   });
   if (!made.ok) {

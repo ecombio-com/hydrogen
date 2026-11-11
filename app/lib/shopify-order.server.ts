@@ -114,7 +114,7 @@ async function markIntent(env: Env, id: string, orderName: string) {
 export async function createPaidOrder(
   env: Env,
   pi: Intent,
-  input: {email: string; mailing: Mailing; lines: OrderLine[]},
+  input: {email: string; mailing: Mailing; billing?: Mailing; lines: OrderLine[]},
 ): Promise<Made> {
   const cur = (pi.currency ?? 'usd').toUpperCase();
   const shipCents = Number(pi.metadata?.shipping_cents ?? 0);
@@ -141,7 +141,11 @@ export async function createPaidOrder(
         tags: [tag, ...(pi.metadata?.storefront_id ? [`storefront_${pi.metadata.storefront_id}`] : [])],
         lineItems: input.lines.map((l) => ({variantId: l.variantId, quantity: l.quantity, ...(l.unitCents != null ? {priceSet: moneyBag(l.unitCents)} : {})})),
         shippingAddress: input.mailing,
-        billingAddress: input.mailing,
+        billingAddress: input.billing ?? input.mailing,
+        // Link or create the Shopify customer, like a native checkout does.
+        customer: {toUpsert: {email: input.email, firstName: input.mailing.firstName, lastName: input.mailing.lastName}},
+        ...(input.mailing.phone ? {phone: input.mailing.phone.startsWith('+') ? input.mailing.phone : `+1${input.mailing.phone.replace(/\D/g, '')}`} : {}),
+        customAttributes: pi.metadata?.storefront_id ? [{key: 'storefront', value: pi.metadata.storefront_id}] : [],
         shippingLines: [{title: getShippingOption(pi.metadata?.shipping_method).title, code: getShippingOption(pi.metadata?.shipping_method).id, priceSet: moneyBag(shipCents)}],
         taxesIncluded: false,
         taxLines: taxCents && baseCents > 0 ? [{title: 'Sales tax', rate: taxCents / baseCents, priceSet: moneyBag(taxCents)}] : [],

@@ -1,0 +1,32 @@
+[
+  {
+    "product": "PRODUCT_ID_1",
+    "total_review": 0,
+    "average": 0.0,
+    "distribution": "null",
+    "returned": 0,
+    "with_photos": 0,
+    "review_keys": "",
+    "top_keys": "bottomline,found_filtered_reviews,grouping_data,pagination,product_tags,products,reviews,syndication_data"
+  },
+  {
+    "product": "PRODUCT_ID_2",
+    "total_review": 0,
+    "average": 0.0,
+    "distribution": "null",
+    "returned": 0,
+    "with_photos": 0,
+    "review_keys": "",
+    "top_keys": "bottomline,found_filtered_reviews,grouping_data,pagination,product_tags,products,reviews,syndication_data"
+  },
+  {
+    "product": "PRODUCT_ID_3",
+    "total_review": 0,
+    "average": 0.0,
+    "distribution": "null",
+    "returned": 0,
+    "with_photos": 0,
+    "review_keys": "",
+    "top_keys": "bottomline,found_filtered_reviews,grouping_data,pagination,product_tags,products,reviews,syndication_data"
+  }
+]

@@ -26,6 +26,7 @@ import {
   type SummaryLine,
 } from '~/components/checkout/checkout-shell';
 import {snapshotPrices} from '~/lib/price-watch';
+import {getDeliveryGroups, type DeliveryGroup} from '~/lib/delivery-options.server';
 import {SHIPPING_OPTIONS, getShippingOption, shippingLabel} from '~/lib/shipping-options';
 import {EmptyCart} from '~/components/checkout/empty-cart';
 
@@ -57,6 +58,10 @@ export async function loader({context, params}: Route.LoaderArgs) {
   if (!stripeCheckoutEnabled(context.env)) {
     await context.cart.updateAttributes([{key: 'storefront_id', value: getStorefrontConfig(context.env.PUBLIC_STOREFRONT_ID).slug}]);
   }
+  const ownPayment = stripeCheckoutEnabled(context.env);
+  const savedAddress = (context.session.get('checkoutAddress') as CheckoutAddress | undefined) ?? null;
+  // Shopify takes payment: load Shopify's real rates once the address is on the cart.
+  const groups: DeliveryGroup[] = !ownPayment && savedAddress ? await getDeliveryGroups(context.storefront, cart.id) : [];
   const currency = cart.cost.totalAmount.currencyCode;
   const lines: SummaryLine[] = cart.lines.nodes.map((l) => ({
     id: l.id,
@@ -66,10 +71,11 @@ export async function loader({context, params}: Route.LoaderArgs) {
     image: l.merchandise.image ?? null,
   }));
   return {
-    address: (context.session.get('checkoutAddress') as CheckoutAddress | undefined) ?? null,
+    address: savedAddress,
+    groups,
     billing: (context.session.get('checkoutBilling') as BillingAddress | undefined) ?? null,
     delivery: getShippingOption(context.session.get('deliveryMethod')).id,
-    ownPayment: stripeCheckoutEnabled(context.env),
+    ownPayment,
     baseAmount: Number(cart.cost.totalAmount.amount),
     currency,
     lines,
@@ -122,7 +128,9 @@ export async function action({request, context, params}: Route.ActionArgs) {
     return fail({error: 'Please fix the highlighted fields.', fieldErrors});
   }
 
-  if (!stripeCheckoutEnabled(context.env)) {
+  const previous = context.session.get('checkoutAddress') as CheckoutAddress | undefined;
+  const changed = JSON.stringify(previous ?? null) !== JSON.stringify(address);
+  if (!stripeCheckoutEnabled(context.env) && changed) {
     // Shopify hosted checkout: save the address onto the Shopify cart so checkout opens prefilled.
     const state = address.state;
     const phone = toE164(address.phone);
@@ -153,6 +161,26 @@ export async function action({request, context, params}: Route.ActionArgs) {
   context.session.set('deliveryMethod', getShippingOption(form.get('delivery')).id);
   if (billing) context.session.set('checkoutBilling', billing);
   else context.session.unset('checkoutBilling');
+
+  if (!stripeCheckoutEnabled(context.env)) {
+    // New or edited address: come back here so Shopify's rates for it can load.
+    if (changed) return redirect(`${localePath('/address', params)}#delivery`);
+    // Same address: save the chosen rate per delivery group onto the Shopify cart.
+    const picks = [...form.entries()]
+      .filter(([k, v]) => k.startsWith('ship:') && typeof v === 'string' && v)
+      .map(([k, v]) => ({deliveryGroupId: k.slice(5), deliveryOptionHandle: String(v)}));
+    const groups = await getDeliveryGroups(context.storefront, await context.cart.getCartId());
+    // No choice posted yet (for example after Edit address): show the options again.
+    if (!picks.length && groups.length) return redirect(`${localePath('/address', params)}#delivery`);
+    if (groups.some((g) => !picks.find((p) => p.deliveryGroupId === g.id))) {
+      return fail({error: 'Please choose a delivery option for every item.'});
+    }
+    if (picks.length) {
+      const chosen = await context.cart.updateSelectedDeliveryOption(picks);
+      const problem = chosen.userErrors?.[0]?.message;
+      if (problem) return fail({error: problem});
+    }
+  }
   return redirect(localePath('/payment', params));
 }
 
@@ -226,7 +254,14 @@ export default function Address() {
 }
 
 function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<typeof loader>>, {empty: true}>}) {
-  const {address, billing, lines, subtotal, delivery, baseAmount, currency, ownPayment} = data;
+  const {address, billing, lines, subtotal, delivery, baseAmount, currency, ownPayment, groups} = data;
+  const [picked, setPicked] = useState<Record<string, string>>(() =>
+    Object.fromEntries(groups.map((g) => [g.id, g.selected ?? g.options[0]?.handle ?? ''])),
+  );
+  const shopifyShipping = groups.length
+    ? groups.reduce((sum, g) => sum + Number(g.options.find((o) => o.handle === picked[g.id])?.estimatedCost.amount ?? 0), 0)
+    : null;
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', {style: 'currency', currency}).format(n);
   const [deliveryId, setDeliveryId] = useState<string>(delivery);
   const chosen = getShippingOption(deliveryId);
   const estTotal = new Intl.NumberFormat('en-US', {style: 'currency', currency}).format(baseAmount + chosen.cents / 100);
@@ -251,11 +286,19 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
             {ownPayment ? (
               <SummaryRow label={chosen.title} value={shippingLabel(chosen.cents)} positive={chosen.cents === 0} />
             ) : (
-              <SummaryRow label="Shipping" value="Calculated at payment" />
+              <SummaryRow
+                label="Shipping"
+                value={shopifyShipping == null ? 'Choose below' : shopifyShipping === 0 ? 'Free' : fmt(shopifyShipping)}
+                positive={shopifyShipping === 0}
+              />
             )}
             <SummaryRow label="Estimated taxes" value="Calculated at payment" />
             <SummaryDivider />
-            {ownPayment ? <SummaryRow label="Estimated total" value={estTotal} strong /> : null}
+            {ownPayment ? (
+              <SummaryRow label="Estimated total" value={estTotal} strong />
+            ) : shopifyShipping != null ? (
+              <SummaryRow label="Estimated total" value={fmt(baseAmount + shopifyShipping)} strong />
+            ) : null}
             <ConsentNote />
             <TrustBox />
           </div>
@@ -263,7 +306,7 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
       }
       footerBar={
         <button form="address-form" type="submit" disabled={busy} className="h-12 w-full rounded-ds-md bg-foreground text-ds-regular font-semibold text-background disabled:opacity-60">
-          {busy ? 'Saving…' : 'Continue to payment'}
+          {busy ? 'Saving…' : (!ownPayment && (!address || editing)) ? 'Continue to delivery' : 'Continue to payment'}
         </button>
       }
     >
@@ -394,6 +437,61 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
         </div>
         ) : null}
 
+        {/* ---- Delivery method from Shopify (Shopify takes payment) ---- */}
+        {!ownPayment && address && !editing ? (
+          <div id="delivery" className="grid scroll-mt-24 gap-3">
+            <h2 className="text-ds-regular font-semibold text-foreground">Select delivery method</h2>
+            {groups.length ? (
+              groups.map((g) => (
+                <CheckoutCard key={g.id}>
+                  <SummaryItems lines={g.items.map((i) => ({id: i.id, title: i.title, qty: i.quantity, image: i.image}))} />
+                  <div role="radiogroup" aria-label="Delivery method" className="grid gap-3">
+                    {g.options.map((o) => {
+                      const on = picked[g.id] === o.handle;
+                      const cost = Number(o.estimatedCost.amount);
+                      return (
+                        <label
+                          key={o.handle}
+                          className={`flex cursor-pointer items-center justify-between gap-3 rounded-ds-md p-4 transition-colors ${on ? 'border-2 border-foreground' : 'border border-border hover:border-foreground/40'}`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name={`ship:${g.id}`}
+                              value={o.handle}
+                              checked={on}
+                              onChange={() => setPicked((p) => ({...p, [g.id]: o.handle}))}
+                              className="size-4 accent-foreground"
+                            />
+                            <span className="grid">
+                              <span className="text-ds-small font-semibold text-foreground">{o.title ?? 'Shipping'}</span>
+                              {o.description ? (
+                                <span className="flex items-center gap-1.5 text-ds-small text-muted-foreground">
+                                  <Truck className="size-3.5" aria-hidden="true" />
+                                  {o.description}
+                                </span>
+                              ) : null}
+                            </span>
+                          </span>
+                          <span className={`text-ds-small font-semibold ${cost === 0 ? 'text-positive' : 'text-foreground'}`}>
+                            {cost === 0 ? 'Free' : fmt(cost)}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </CheckoutCard>
+              ))
+            ) : (
+              <CheckoutCard>
+                <p className="text-ds-small text-muted-foreground">
+                  We could not load shipping options for this address. Check the address above, or continue and choose shipping in the secure payment step.
+                </p>
+              </CheckoutCard>
+            )}
+          </div>
+        ) : null}
+
         {result?.error ? (
           <p role="alert" className="rounded-ds-md bg-destructive/10 px-4 py-3 text-ds-small text-destructive">
             {result.error}
@@ -402,7 +500,7 @@ function AddressView({data}: {data: Exclude<ReturnType<typeof useLoaderData<type
 
         <div className="hidden justify-end lg:flex">
           <button type="submit" disabled={busy} className="h-12 rounded-ds-md bg-foreground px-8 text-ds-regular font-semibold text-background hover:bg-foreground/90 disabled:opacity-60">
-            {busy ? 'Saving…' : 'Next'}
+            {busy ? 'Saving…' : (!ownPayment && (!address || editing)) ? 'Continue to delivery' : 'Next'}
           </button>
         </div>
       </Form>

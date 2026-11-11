@@ -1,0 +1,48 @@
+app\components\blog\article-widgets.tsx:9: const url = window.location.href;
+app\components\cart\cart-drawer.tsx:119: <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={lines.length > 0} />
+app\components\cart\cart-page-summary.tsx:29: <CartCheckout checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} hasLines={hasLines} />
+app\components\cart\checkout.tsx:8: export function CartCheckout({checkoutUrl, hasLines}: {checkoutUrl?: string; hasLines: boolean}) {
+app\components\cart\checkout.tsx:19: if (!checkoutUrl || !hasLines || isUpdating || isRedirecting) {
+app\components\checkout\payment-form.tsx:42: confirmParams: {return_url: `${window.location.origin}/payment/complete`},
+app\components\collections\collection-tabs.tsx:31: if (window.location.hash === '#advice') setTab('advice');
+app\components\collections\collection-tabs.tsx:38: const url = new URL(window.location.href);
+app\components\error\error-boundary-content.tsx:25: {!notFound && <Button onClick={() => window.location.reload()}>Try again</Button>}
+app\components\nav\announcement-bar.tsx:116: const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+app\components\nav\locale-bar.tsx:188: window.location.assign(hrefFor(primaryLocale(first)));
+app\components\CartSummary.tsx:45: <CartCheckoutActions checkoutUrl={forceCheckoutHost(cart?.checkoutUrl)} />
+app\components\CartSummary.tsx:50: function CartCheckoutActions({checkoutUrl}: {checkoutUrl?: string}) {
+app\components\CartSummary.tsx:51: if (!checkoutUrl) return null;
+app\components\Header.tsx:225: url: window.location.href || '',
+app\lib\analytics\ga4.ts:129: send('page_view', {page_location: p.url ?? window.location.href, page_title: document.title}),
+app\lib\checkout-kit.client.ts:71: window.location.assign('/payment/complete?kit=1' + (orderId ? '&order=' + encodeURIComponent(String(orderId)) : ''));
+app\lib\checkout-session.server.ts:7: checkoutUrl
+app\lib\checkout-session.server.ts:65: next: {type: 'redirect', url: forceCheckoutHost(cart.checkoutUrl)},
+app\lib\fragments.ts:126: checkoutUrl
+app\lib\i18n.ts:66: export function localeRedirect(request: Request): Response | null {
+app\lib\redirect.ts:21: throw redirect(url.toString());
+app\routes\($locale).account_.logout.tsx:6: return redirect('/');
+app\routes\($locale).account._index.tsx:6: return redirect(`${prefix}/account/profile`);
+app\routes\($locale).account.$.tsx:8: return redirect('/account');
+app\routes\($locale).account.orders.$id.tsx:25: return redirect('/account/orders');
+app\routes\($locale).address.tsx:32: if (!cart?.totalQuantity) return redirect(localePath('/cart', params));
+app\routes\($locale).address.tsx:95: return redirect(localePath('/payment', params));
+app\routes\($locale).blogs.$blogHandle._index.tsx:9: throw redirect(`${pathPrefix}/blogs/category/${params.blogHandle}`, 301);
+app\routes\($locale).blogs.$blogHandle._index.tsx:12: export default function BlogRedirect() {
+app\routes\($locale).blogs.$blogHandle.$articleHandle.tsx:9: throw redirect(`${pathPrefix}/blogs/articles/${params.articleHandle}`, 301);
+app\routes\($locale).blogs.$blogHandle.$articleHandle.tsx:12: export default function ArticleRedirect() {
+app\routes\($locale).cart.$lines.tsx:26: if (!lines) return redirect('/cart');
+app\routes\($locale).cart.$lines.tsx:66: return redirect(cartResult.checkoutUrl, {headers});
+app\routes\($locale).checkout._index.tsx:4: return redirect('/address');
+app\routes\($locale).checkout.shipping.tsx:7: return redirect(`${prefix}/cart`, 301);
+app\routes\($locale).collections.$handle.tsx:64: if (!handle) throw redirect('/collections');
+app\routes\($locale).discount.$code.tsx:35: return redirect(redirectUrl);
+app\routes\($locale).discount.$code.tsx:44: return redirect(redirectUrl, {
+app\routes\($locale).payment_.complete.tsx:18: if (!kit || !context.session.get('kitCheckoutStarted')) return redirect('/cart');
+app\routes\($locale).payment_.complete.tsx:28: if (!piId) return redirect('/cart');
+app\routes\($locale).payment.tsx:40: if (!cart?.totalQuantity) return redirect(localePath('/cart', params));
+app\routes\($locale).payment.tsx:42: if (!address) return redirect(localePath('/address', params));
+app\routes\($locale).payment.tsx:61: checkoutUrl: forceCheckoutHost(cart.checkoutUrl),
+app\routes\($locale).payment.tsx:167: <a href={d.checkoutUrl} data-checkout-kit className="flex h-12 w-full items-center justify-center rounded-md bg-black text-white">
+app\routes\api.checkout-url.tsx:7: // Returns the current cart's Shopify checkoutUrl for Checkout Kit, after stamping the storefront id.
+app\routes\api.checkout-url.tsx:19: return Response.json({url: forceCheckoutHost(cart.checkoutUrl)}, {headers});
+app\entry.client.tsx:7: if (!window.location.origin.includes('webcache.googleusercontent.com')) {

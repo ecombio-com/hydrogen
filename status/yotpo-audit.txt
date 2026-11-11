@@ -1,0 +1,53 @@
+=== 1. Yotpo endpoints called in code ===
+
+File                 Endpoint
+----                 --------
+app\@yotpo\config.ts https://api.yotpo.com/v1/widge
+                     t
+app\@yotpo\config.ts https://api.yotpo.com/v1/widge
+                     t/reviews
+
+
+=== 2. Yotpo env var NAMES referenced in code (no values) ===
+PUBLIC_YOTPO_APP_KEY
+
+=== 3. Auth style (secret/oauth/token usage = likely authenticated API) ===
+app\@yotpo\config.ts:3
+
+=== 4. Feature usage -> plan needed (per your account table) ===
+Photo/video reviews (Starter+)             files: 4
+      app\@yotpo\client.server.ts
+      app\@yotpo\components\remote-image.tsx
+      app\@yotpo\components\reviews-browser.tsx
+Review coupons (Starter+)                  files: 0
+Star ratings/widget (Starter+)             files: 11
+      app\@yotpo\client.server.ts
+      app\@yotpo\components\review-form.tsx
+      app\@yotpo\components\reviews-browser.tsx
+Reviews Media Gallery (Pro+)               files: 2
+      app\@yotpo\components\reviews-browser.tsx
+      app\@yotpo\components\ugc-media.tsx
+AI Reviews Summary (Pro+)                  files: 5
+      app\@yotpo\client.server.ts
+      app\@yotpo\components\reviews-browser.tsx
+      app\@yotpo\components\star-ratings.tsx
+Smart Sorting / sort (Pro+)                files: 2
+      app\@yotpo\client.server.ts
+      app\@yotpo\components\reviews-browser.tsx
+Attribute Filters / filter (Pro+)          files: 2
+      app\@yotpo\client.server.ts
+      app\@yotpo\components\reviews-browser.tsx
+Community Q&A (Pro+)                       files: 0
+Custom Questions / tagging (Pro+)          files: 0
+Highlights / Smart Filters (Premium)       files: 0
+Site reviews (Starter+)                    files: 0
+Webhooks (Premium)                         files: 0
+
+=== 5. Klaviyo / Google Ads references anywhere in app\ ===
+
+=== 6. Yotpo keys per .env file: name + 8-char hash of value (values NOT shown) ===
+.env                       PUBLIC_YOTPO_APP_KEY         EB43ABF8
+.env.bicyclebio            PUBLIC_YOTPO_APP_KEY         EB43ABF8
+.env.dev-store             PUBLIC_YOTPO_APP_KEY         EB43ABF8
+.env.prod-bicyclebio       PUBLIC_YOTPO_APP_KEY         EB43ABF8
+.env.prod-ecombio          PUBLIC_YOTPO_APP_KEY         EB43ABF8

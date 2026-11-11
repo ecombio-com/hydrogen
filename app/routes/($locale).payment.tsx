@@ -26,6 +26,7 @@ import {
 
 import {calculateTotals} from '~/lib/checkout-totals.server';
 import {getShippingOption} from '~/lib/shipping-options';
+import {getDeliveryGroups, shippingTotal} from '~/lib/delivery-options.server';
 import {useEffect, useState, type ComponentType} from 'react';
 
 type BillingAddress = Omit<CheckoutAddress, 'email' | 'phone'>;
@@ -77,8 +78,11 @@ export async function loader({context, params}: Route.LoaderArgs) {
 
   if (!stripeCheckoutEnabled(context.env)) {
     // Shopify hosted checkout: the Pay button opens Shopify checkout (Checkout Kit), already prefilled.
+    const shipDollars = shippingTotal(await getDeliveryGroups(context.storefront, cart.id));
     return {
       mode: 'shopify' as const,
+      kitShipping: shipDollars == null ? null : shipDollars === 0 ? 'Free' : money(Math.round(shipDollars * 100), currency),
+      kitEstimate: shipDollars == null ? null : money(totalCents + Math.round(shipDollars * 100), currency),
       checkoutUrl: forceCheckoutHost(cart.checkoutUrl),
       priceChanges,
       subtotal: money(lineSum, currency),
@@ -193,10 +197,17 @@ function PaymentView({d}: {d: Exclude<ReturnType<typeof useLoaderData<typeof loa
                 <SummaryRow label="Tax" value={d.tax} />
               </>
             ) : (
-              <SummaryRow label="Shipping and tax" value="Next step" />
+              <>
+                <SummaryRow label="Shipping" value={d.kitShipping ?? 'Next step'} positive={d.kitShipping === 'Free'} />
+                <SummaryRow label="Tax" value="Calculated in secure payment" />
+              </>
             )}
             <SummaryDivider />
-            <SummaryRow label={d.mode === 'stripe' ? 'Total' : 'Total before shipping and tax'} value={total} strong />
+            <SummaryRow
+              label={d.mode === 'stripe' ? 'Total' : d.kitEstimate ? 'Total before tax' : 'Total before shipping and tax'}
+              value={d.mode === 'stripe' ? total : d.kitEstimate ?? total}
+              strong
+            />
             <ConsentNote />
             <TrustBox />
           </div>
