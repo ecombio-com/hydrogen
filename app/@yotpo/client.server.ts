@@ -46,6 +46,31 @@ async function mapLimit<T, R>(
   return out;
 }
 
+// Dev-only preview data for fields Yotpo doesn't supply yet. import.meta.env.DEV is false in production builds.
+const SAMPLE_CONDITIONS = ['Premium', 'Excellent', 'Good', 'Fair'];
+const SAMPLE_COUNTRIES = ['United States', 'Canada'];
+const SAMPLE_NUDGE = [0, -0.4, 0.3, -0.2];
+
+function withSampleFields(data: YotpoProductReviews): YotpoProductReviews {
+  if (!import.meta.env.DEV) return data;
+  const clamp = (n: number) => Math.max(1, Math.min(5, n));
+  return {
+    ...data,
+    reviews: data.reviews.map((r, i) => ({
+      ...r,
+      country: r.country ?? SAMPLE_COUNTRIES[i % SAMPLE_COUNTRIES.length],
+      condition: r.condition ?? SAMPLE_CONDITIONS[i % SAMPLE_CONDITIONS.length],
+      variant_title: r.variant_title ?? 'Sample variant - Preview data',
+      purchased_at: r.purchased_at ?? '6/12/26',
+      sub_ratings: r.sub_ratings ?? [
+        {label: 'Battery', score: clamp(r.score + SAMPLE_NUDGE[i % 4])},
+        {label: 'Shipping', score: clamp(r.score + SAMPLE_NUDGE[(i + 1) % 4])},
+        {label: 'Assembly', score: clamp(r.score + SAMPLE_NUDGE[(i + 2) % 4])},
+        {label: 'Value', score: clamp(r.score + SAMPLE_NUDGE[(i + 3) % 4])},
+      ],
+    })),
+  };
+}
 export function createYotpoClient(args: {
   env: YotpoEnv;
   cache: Cache;
@@ -126,7 +151,7 @@ export function createYotpoClient(args: {
     if (!config.appKey) return null;
     const {page = 1, perPage = config.reviewsFetchLimit} = opts;
     try {
-      return await fetchProductReviews(config.appKey, productId, page, perPage);
+      return withSampleFields(await fetchProductReviews(config.appKey, productId, page, perPage));
     } catch (err) {
       console.error(`Yotpo fetch failed (product ${productId}):`, err);
       return null;
