@@ -17,6 +17,7 @@ export type BodySegment =
   | {id?: string | undefined; text: string; title: string; type: 'band'}
   | {
       button?: {href: string; label: string} | undefined;
+      id?: string | undefined;
       image?: string | undefined;
       text: string;
       title: string;
@@ -91,11 +92,13 @@ function pushBlockSegment(match: RegExpMatchArray, segments: BodySegment[]): voi
     const id = (head.length > 1 ? head[0] : slugify(title)) ?? '';
     segments.push({id: id || undefined, text: blockText(match[14] ?? ''), title, type: 'band'});
   } else if (match[15] !== undefined) {
-    const [title = '', image = '', label = '', href = ''] = match[15]
+    // [split: title | image | label | href | id]  (id is optional, used as an #anchor)
+    const [title = '', image = '', label = '', href = '', id = ''] = match[15]
       .split('|')
       .map((part) => plainText(part));
     segments.push({
       button: label && href ? {href, label} : undefined,
+      id: id || undefined,
       image: image || undefined,
       text: blockText(match[16] ?? ''),
       title,

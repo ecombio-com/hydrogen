@@ -105,9 +105,9 @@ function Band({block}: {block: Of<'band'>}) {
 }
 
 function Split({block}: {block: Of<'split'>}) {
-  const {button, image, text, title} = block;
+  const {button, id, image, text, title} = block;
   return (
-    <Container className="max-w-5xl py-(--padding-section-medium)">
+    <Container className="max-w-5xl scroll-mt-24 py-(--padding-section-medium)" id={id}>
       <div className={cn('grid items-center gap-(--spacer-large)', image && 'md:grid-cols-2')}>
         {image && (
           <div className="relative aspect-4/3 overflow-hidden rounded-lg">

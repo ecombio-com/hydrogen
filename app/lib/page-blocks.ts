@@ -18,6 +18,7 @@ export type PageBlock =
   | {id?: string | undefined; text: string; title: string; type: 'band'}
   | {
       button?: BlockLink | undefined;
+      id?: string | undefined;
       image?: string | undefined;
       text: string;
       title: string;
@@ -100,6 +101,7 @@ function parseBlock(v: unknown): PageBlock | undefined {
       return title && body
         ? {
             button: parseLink(v['button']),
+            id: text(v['id']) || undefined,
             image: localImage(v['image']),
             text: body,
             title,

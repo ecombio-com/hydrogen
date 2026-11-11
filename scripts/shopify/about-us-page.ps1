@@ -21,22 +21,22 @@ $pageBody = @'
 <p>[pill: Contact | #contact]</p>
 <p>Ecombio is an online shop for electric bikes, electric scooters and electric skateboards. We publish buying guides so you can choose the right ride with confidence.</p>
 <p>[stat: 3 | | Micro-mobility categories: e-bikes, e-scooters, e-skateboards]</p>
-<p>[band: commitments | Commitments]</p>
+<p>[split: Commitments | /about/commitments.webp | | | commitments]</p>
 <p>We want choosing an electric ride to be simple, honest and well informed.</p>
-<p>[/band]</p>
-<p>[band: our-impact-report | Our impact]</p>
+<p>[/split]</p>
+<p>[split: Our impact | /about/impact.webp | | | our-impact-report]</p>
 <p>Every e-bike, e-scooter and e-skateboard trip can replace a car trip. Our impact report is coming soon.</p>
-<p>[/band]</p>
-<p>[band: newsroom | Newsroom]</p>
+<p>[/split]</p>
+<p>[split: Newsroom | /about/newsroom.webp | | | newsroom]</p>
 <p>News and press updates from Ecombio are coming soon.</p>
-<p>[/band]</p>
-<p>[band: leadership | Leadership]</p>
+<p>[/split]</p>
+<p>[split: Leadership | /about/leadership.webp | | | leadership]</p>
 <p>Meet the team behind Ecombio. Coming soon.</p>
-<p>[/band]</p>
+<p>[/split]</p>
 <p>[band: contact | Contact]</p>
 <p>More questions? Visit our Contact us page.</p>
 <p>[/band]</p>
-<p>[split: Work at Ecombio | | Join us | /pages/careers]</p>
+<p>[split: Work at Ecombio | /about/careers.webp | Join us | /pages/careers | careers]</p>
 <p>Want to build the future of micro-mobility with us? See our open roles.</p>
 <p>[/split]</p>
 '@
@@ -56,6 +56,6 @@ $r = Invoke-RestMethod -Method Post -Uri $api -Headers $h -ContentType 'applicat
 if ($r.errors) { $r.errors | ConvertTo-Json -Depth 5 }
 elseif ($r.data.pageUpdate.userErrors.Count) { $r.data.pageUpdate.userErrors | ConvertTo-Json }
 else {
-  $ids = [regex]::Matches($r.data.pageUpdate.page.body, '\[band:\s*([a-z0-9-]+)') | ForEach-Object { $_.Groups[1].Value }
+  $ids = [regex]::Matches($r.data.pageUpdate.page.body, '\[(?:band:\s*([a-z0-9-]+)|split:[^\]]*\|\s*([a-z0-9-]+)\s*\])') | ForEach-Object { if ($_.Groups[1].Success) { $_.Groups[1].Value } else { $_.Groups[2].Value } }
   "Updated /pages/$($r.data.pageUpdate.page.handle). Sections: $($ids -join ', ')"
 }
