@@ -2,6 +2,7 @@ export const COPY = {
   bundle: 'Bundle Includes',
   bundleItem: 'Bundle item',
   checkout: 'Go to shipping',
+  checkoutShopify: 'Checkout',
   checkoutLabel: 'Proceed to Checkout',
   close: 'Close cart',
   continueShopping: 'Continue Shopping',

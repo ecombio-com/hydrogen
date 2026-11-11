@@ -1,4 +1,5 @@
 import {getStorefrontConfig} from '~/lib/storefront-config';
+import {stripeCheckoutEnabled} from '~/lib/stripe-checkout';
 import {Analytics, getShopAnalytics, useNonce} from '@shopify/hydrogen';
 import {
   Outlet,
@@ -89,6 +90,8 @@ export async function loader(args: Route.LoaderArgs) {
     ...deferredData,
     ...criticalData,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+    // 'stripe' = own /address → /payment flow; 'shopify' = straight to Shopify hosted checkout
+    checkoutMode: stripeCheckoutEnabled(env) ? ('stripe' as const) : ('shopify' as const),
     brand: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).brand,
     brandName: getStorefrontConfig(env.PUBLIC_STOREFRONT_ID).name,
     origin: new URL(args.request.url).origin,

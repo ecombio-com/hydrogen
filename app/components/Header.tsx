@@ -1,5 +1,6 @@
 import {Suspense, type ReactNode} from 'react';
-import {Await, useAsyncValue} from 'react-router';
+import {Await, useAsyncValue, useNavigate, useRouteLoaderData} from 'react-router';
+import type {RootLoader} from '~/root';
 import {
   type CartViewPayload,
   useAnalytics,
@@ -208,15 +209,23 @@ function CartBadge({count}: {count: number}) {
   const {publish, shop, cart, prevCart} = useAnalytics();
   const locale = useUrlLocale();
   const label = count > 0 ? `Cart, ${count} ${count === 1 ? 'item' : 'items'}` : 'Cart';
+  const navigate = useNavigate();
+  // Stripe mode: the cart icon goes straight to the /cart page. Shopify mode: opens the cart drawer.
+  const stripeMode = useRouteLoaderData<RootLoader>('root')?.checkoutMode === 'stripe';
+  const cartHref = `${locale ? `/${locale}` : ''}/cart`;
 
   return (
     <a
-      href={`${locale ? `/${locale}` : ''}/cart`}
+      href={cartHref}
       aria-label={label}
       className="inline-flex items-center gap-1.5 text-foreground hover:opacity-70"
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();
+        if (stripeMode) {
+          navigate(cartHref);
+          return;
+        }
         open('cart');
         publish('cart_viewed', {
           cart,

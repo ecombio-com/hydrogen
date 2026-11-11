@@ -1,6 +1,10 @@
-// Dev store (ecombio.myshopify.com) only: its checkout links are moved to store.ecombio.com.
-// Any other store (e.g. the live store khkkyb-b8) keeps the checkout URL Shopify returns.
-const DEV_STORE_CHECKOUT_HOSTS = new Set(['ecombio.myshopify.com', 'checkout.bicyclebio.com']);
+// Every Shopify checkout link is moved to our custom checkout domain, store.ecombio.com
+// (connected to the live store khkkyb-b8 as its Checkout domain).
+const DEV_STORE_CHECKOUT_HOSTS = new Set([
+  'khkkyb-b8.myshopify.com',
+  'ecombio.myshopify.com',
+  'checkout.bicyclebio.com',
+]);
 
 export function forceCheckoutHost<T extends string | null | undefined>(url: T): T {
   if (!url) return url;
