@@ -22,16 +22,20 @@ export function isCheckoutPath(pathname: string) {
 
 /* ---------- Header + footer (logo only, no menu) ---------- */
 
-export function CheckoutHeader({brandName}: {brandName: string}) {
+export function CheckoutHeader({brandName, logoSrc}: {brandName: string; logoSrc?: string}) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">
       <div className="mx-auto flex h-14 max-w-[1280px] items-center justify-between px-4 lg:px-8">
         <LocalizedLink
           href="/"
-          className="text-ds-medium font-semibold tracking-tight text-foreground"
+          className="flex shrink-0 items-center text-ds-medium font-semibold tracking-tight text-foreground"
           aria-label={`${brandName} home`}
         >
-          {brandName}
+          {logoSrc ? (
+            <img src={logoSrc} alt={brandName} width={140} height={36} className="h-8 w-auto" />
+          ) : (
+            brandName
+          )}
         </LocalizedLink>
         <div className="flex items-center gap-4 text-ds-small">
           <span className="hidden items-center gap-1.5 text-muted-foreground sm:flex">

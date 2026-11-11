@@ -42,7 +42,10 @@ export function PageLayout({
   if (isCheckoutPath(pathname)) {
     return (
       <Aside.Provider>
-        <CheckoutHeader brandName={brandName || header?.shop?.name || 'Store'} />
+        <CheckoutHeader
+          brandName={brandName || header?.shop?.name || 'Store'}
+          logoSrc={!brand || brand === 'ecombio' ? '/logo.svg' : undefined}
+        />
         <main id="main-content" className="flex-1">{children}</main>
         <CheckoutFooter />
       </Aside.Provider>

@@ -8,11 +8,14 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [tailwindcss(), hydrogen(), oxygen(), reactRouter()],
   resolve: {
-    alias: {
+    alias: [
+      // Route every `import {cn} from 'cn'` through our config, which knows the
+      // text-ds-* font sizes (so they no longer erase text colors).
+      {find: /^cn$/, replacement: fileURLToPath(new URL('./app/lib/cn.ts', import.meta.url))},
       // Vite's native tsconfig path resolver does not cover JavaScript
       // projects that use jsconfig.json, so define Hydrogen's app alias here.
-      '~': fileURLToPath(new URL('./app', import.meta.url)),
-    },
+      {find: '~', replacement: fileURLToPath(new URL('./app', import.meta.url))},
+    ],
     tsconfigPaths: true,
   },
   build: {
