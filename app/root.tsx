@@ -15,6 +15,7 @@ import {
 import type {Route} from './+types/root';
 import favicon from '~/assets/favicon.svg';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+import {fillMenuCollectionImages} from '~/lib/menu-images.server';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {ErrorBoundaryContent} from '~/components/error/error-boundary-content';
@@ -129,6 +130,8 @@ async function loadCriticalData({context, request}: Route.LoaderArgs) {
     getAnnouncementBar(storefront),
     // Add other queries here, so that they are loaded in parallel
   ]);
+
+  header.menu = await fillMenuCollectionImages(storefront, header.menu);
 
   return {announcementBar: isAnnouncementDismissed(request) ? null : announcementBar, header};
 }

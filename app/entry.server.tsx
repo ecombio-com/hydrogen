@@ -30,6 +30,7 @@ export default async function handleRequest(
       'https://api.stripe.com',
       'https://maps.googleapis.com',
     ],
+    mediaSrc: ["'self'", 'https://cdn.shopify.com'],
     imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com', 'https://*.google-analytics.com', 'https://*.stripe.com'],
   });
 
