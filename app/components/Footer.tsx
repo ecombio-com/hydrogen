@@ -50,16 +50,8 @@ export function Footer({
                     <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 md:grid-cols-5">
                       {items.map((column, index) => (
                         <div key={column.id} className="space-y-3">
-                          {column.url ? (
-                            <MenuLink
-                              url={internalUrl(column.url, publicStoreDomain, primaryDomainUrl)}
-                              className="block text-ds-regular font-semibold transition-opacity hover:opacity-70"
-                            >
-                              {column.title}
-                            </MenuLink>
-                          ) : (
-                            <h3 className="text-ds-regular font-semibold">{column.title}</h3>
-                          )}
+                          {/* Column headings are labels, never links */}
+                          <h3 className="text-ds-regular font-semibold">{column.title}</h3>
                           {(column.items?.length ?? 0) > 0 && (
                             <ul className="space-y-2">
                               {column.items!.map((leaf) => (
@@ -109,7 +101,10 @@ function internalUrl(url: string, publicStoreDomain: string, primaryDomainUrl: s
     url.includes('myshopify.com') ||
     url.includes(publicStoreDomain) ||
     (primaryDomainUrl && url.includes(primaryDomainUrl));
-  return isInternal ? new URL(url).pathname : url;
+  if (!isInternal) return url;
+  // Keep ?query and #anchor (e.g. /pages/about-us#press)
+  const {pathname, search, hash} = new URL(url);
+  return `${pathname}${search}${hash}`;
 }
 
 function MenuLink({url, children, className}: {url: string; children: React.ReactNode; className?: string}) {
