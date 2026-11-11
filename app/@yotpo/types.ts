@@ -16,6 +16,12 @@ export type YotpoReview = {
   // Optional: taken from Yotpo's documented sample, not yet checked against the live account.
   verified_buyer?: boolean;
   images_data?: { id?: number; thumb_url?: string; original_url?: string }[];
+  // Optional, filled when a data source supplies them (Yotpo fields unconfirmed).
+  country?: string;
+  variant_title?: string;
+  condition?: string;
+  purchased_at?: string;
+  sub_ratings?: {label: string; score: number}[];
 };
 
 export type YotpoBottomline = {

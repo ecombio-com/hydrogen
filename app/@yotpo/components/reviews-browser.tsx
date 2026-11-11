@@ -22,14 +22,17 @@ import type { YotpoBottomline, YotpoCollectionReview, YotpoReview } from "../typ
 import { WriteReviewButton } from "./review-form";
 import { Star, StarRow } from "./star";
 import { UgcMediaViewer } from "./ugc-media";
+import { ReviewFooter } from "./review-footer";
+import { RatingDetails } from "./rating-details";
 
 // Product-page reviews have no `product`; collection-page reviews do.
 type BrowserReview = YotpoReview & { product?: YotpoCollectionReview["product"] };
 
-type SortKey = "recent" | "highest" | "lowest" | "helpful";
+type SortKey = "relevant" | "recent" | "highest" | "lowest" | "helpful";
 type Photo = { full: string; thumb: string };
 
 const SORT_LABELS: Record<SortKey, string> = {
+  relevant: "Most relevant",
   recent: "Most recent",
   highest: "Highest rating",
   lowest: "Lowest rating",
@@ -42,6 +45,9 @@ const controlClass =
   "rounded-full border border-neutral-400 bg-white px-3 py-1.5 text-xs text-black focus:outline-none focus:ring-2 focus:ring-black";
 
 const time = (r: BrowserReview) => Date.parse(r.created_at) || 0;
+
+const relevance = (r: BrowserReview) =>
+  r.votes_up * 3 + (photosOf(r).length > 0 ? 2 : 0) + (r.verified_buyer ? 1 : 0);
 
 function photosOf(review: BrowserReview): Photo[] {
   return (review.images_data ?? []).flatMap((image) => {
@@ -306,7 +312,7 @@ function ReviewCard({
               </span>
             ) : null}
           </p>
-          {date ? <p className="mt-1 text-xs text-neutral-700">Reviewed {date}</p> : null}
+          {date ? <p className="mt-1 text-xs text-neutral-700">Reviewed {date}{review.country ? ", " + review.country + "." : ""}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-2 pt-0.5">
           <StarRow score={review.score} color="#000" />
@@ -359,6 +365,12 @@ function ReviewCard({
           {expanded ? "Show less" : "Show more"}
         </button>
       ) : null}
+
+      <ReviewFooter
+        variantTitle={review.variant_title}
+        condition={review.condition}
+        purchasedAt={review.purchased_at}
+      />
 
       {review.product ? (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2 text-xs">
@@ -469,12 +481,28 @@ export function ReviewsBrowser({
   const [minRating, setMinRating] = useState(1); // 1 to 5 = all ratings
   const [maxRating, setMaxRating] = useState(5);
   const [withPhotos, setWithPhotos] = useState(false);
-  const [sort, setSort] = useState<SortKey>("recent");
+  const [conditions, setConditions] = useState<string[]>([]);
+  const conditionOptions = useMemo(
+    () => Array.from(new Set(reviews.map((r) => r.condition).filter((c): c is string => Boolean(c)))),
+    [reviews],
+  );
+  const subRatings = useMemo(() => {
+    const sums = new Map<string, { total: number; n: number }>();
+    for (const r of reviews) {
+      for (const s of r.sub_ratings ?? []) {
+        const cur = sums.get(s.label) ?? { total: 0, n: 0 };
+        sums.set(s.label, { total: cur.total + s.score, n: cur.n + 1 });
+      }
+    }
+    return Array.from(sums, ([label, v]) => ({ label, score: v.total / v.n }));
+  }, [reviews]);
+  const [sort, setSort] = useState<SortKey>("relevant");
   const [shown, setShown] = useState(pageSize);
   const [infoOpen, setInfoOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const filtersActive = minRating !== 1 || maxRating !== 5 || withPhotos || query !== "";
+  const filtersActive =
+    minRating !== 1 || maxRating !== 5 || withPhotos || conditions.length > 0 || query !== "";
 
   const photoReviews = useMemo(
     () =>
@@ -496,6 +524,7 @@ export function ReviewsBrowser({
     const list = reviews.filter((r) => {
       if (r.score < minRating || r.score > maxRating) return false;
       if (withPhotos && photosOf(r).length === 0) return false;
+      if (conditions.length > 0 && !(r.condition && conditions.includes(r.condition))) return false;
       if (q) {
         const haystack = [r.title, r.content, reviewerName(r), r.product?.title]
           .filter(Boolean)
@@ -511,18 +540,21 @@ export function ReviewsBrowser({
           return b.score - a.score || time(b) - time(a);
         case "lowest":
           return a.score - b.score || time(b) - time(a);
+        case "relevant":
+          return relevance(b) - relevance(a) || time(b) - time(a);
         case "helpful":
           return b.votes_up - a.votes_up || time(b) - time(a);
         default:
           return time(b) - time(a);
       }
     });
-  }, [reviews, minRating, maxRating, withPhotos, sort, query]);
+  }, [reviews, minRating, maxRating, withPhotos, conditions, sort, query]);
 
   function clearFilters() {
     setMinRating(1);
     setMaxRating(5);
     setWithPhotos(false);
+    setConditions([]);
     setQuery("");
     setShown(pageSize);
   }
@@ -536,6 +568,13 @@ export function ReviewsBrowser({
     const only = minRating === star && maxRating === star;
     setMinRating(only ? 1 : star);
     setMaxRating(only ? 5 : star);
+    setShown(pageSize);
+  }
+
+  function toggleCondition(option: string) {
+    setConditions((current) =>
+      current.includes(option) ? current.filter((c) => c !== option) : [...current, option],
+    );
     setShown(pageSize);
   }
 
@@ -620,6 +659,11 @@ export function ReviewsBrowser({
           </div>
         </div>
 
+        {subRatings.length > 0 ? (
+          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+            <RatingDetails items={subRatings} />
+          </div>
+        ) : null}
         <div className="px-1">
           <p className="text-base font-semibold text-black">Filters</p>
           <fieldset className="mt-4">
@@ -634,6 +678,24 @@ export function ReviewsBrowser({
               }}
             />
           </fieldset>
+          {conditionOptions.length > 0 ? (
+            <fieldset className="mt-6">
+              <legend className="text-xs font-semibold text-black">Condition</legend>
+              <div className="mt-2 space-y-2">
+                {conditionOptions.map((option) => (
+                  <label key={option} className="flex items-center gap-2 text-xs text-black">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-black"
+                      checked={conditions.includes(option)}
+                      onChange={() => toggleCondition(option)}
+                    />
+                    {option}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
           <p className="mt-6 text-xs font-semibold text-black">Show only reviews</p>
           <div className="mt-2 flex items-center gap-2">
             <button
