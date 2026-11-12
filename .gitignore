@@ -28,3 +28,5 @@ dev.log
 .fuse_hidden*
 
 scripts/shopify/.ecombiov2.env
+
+snapshots/

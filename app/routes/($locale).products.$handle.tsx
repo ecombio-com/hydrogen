@@ -377,9 +377,9 @@ export default function Product() {
               </Await>
             </Suspense>
           </div>
-          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <FrequentlyAskedQuestionsSection html={x.faqBody} />}</Await></Suspense>
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <FrequentlyAskedQuestionsSection html={x.faqBody} faq={x.faq} />}</Await></Suspense>
           <PopularSearches terms={popularSearches} />
-          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <TechnicalSpecsSection html={x.techSpecsBody} />}</Await></Suspense>
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <TechnicalSpecsSection html={x.techSpecsBody} specs={x.specs} title={product.title} />}</Await></Suspense>
           <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <ProductResources manualUrl={x.manualUrl} videoUrl={x.assemblyVideoUrl} />}</Await></Suspense>
         </Sections>
       </Container>

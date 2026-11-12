@@ -1,4 +1,5 @@
 import type {Storefront} from '@shopify/hydrogen';
+import {parseFaq as parseFaqJson, parseSpecs as parseSpecsJson, type Faq, type Specs} from '~/lib/pdp-schema';
 
 export type ExpertReview = {
   title: string;
@@ -36,6 +37,10 @@ export type PromoBanner = {
 export type ReassuranceItem = {icon: string; label: string};
 
 export type ProductExtras = {
+  /** custom.faq (JSON). When set, it wins over faqBody. */
+  faq: Faq | null;
+  /** custom.specs (JSON). When set, it wins over techSpecsBody. */
+  specs: Specs | null;
   faqBody: string | null;
   techSpecsBody: string | null;
   manualUrl: string | null;
@@ -47,6 +52,8 @@ export type ProductExtras = {
 };
 
 const EMPTY: ProductExtras = {
+  faq: null,
+  specs: null,
   faqBody: null,
   techSpecsBody: null,
   manualUrl: null,
@@ -61,6 +68,8 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
   query ProductExtras($handle: String!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     product(handle: $handle) {
+      faqJson: metafield(namespace: "custom", key: "faq") { value }
+      specsJson: metafield(namespace: "custom", key: "specs") { value }
       faq: metafield(namespace: "custom", key: "frequently_asked_questions") {
         reference { ... on Page { body } }
       }
@@ -144,6 +153,8 @@ type ReviewField = {
 
 type ExtrasResult = {
   product?: {
+    faqJson?: Text;
+    specsJson?: Text;
     faq?: {reference?: {body?: string} | null} | null;
     techSpecs?: {reference?: {body?: string} | null} | null;
     ownersManual?: {reference?: {url?: string} | null} | null;
@@ -210,6 +221,8 @@ export async function loadProductExtras(storefront: Storefront, handle: string):
     const heading = text(banner?.heading);
 
     return {
+      faq: parseFaqJson(p.faqJson?.value, handle),
+      specs: parseSpecsJson(p.specsJson?.value, handle),
       faqBody: p.faq?.reference?.body ?? null,
       techSpecsBody: p.techSpecs?.reference?.body ?? null,
       manualUrl: p.ownersManual?.reference?.url ?? null,
