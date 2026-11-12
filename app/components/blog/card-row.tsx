@@ -8,12 +8,18 @@ export function CardRow({
   action,
   children,
   id,
+  itemLabel = 'articles',
+  subtitle,
   title,
 }: {
   /** Rendered under the row, right-aligned (e.g. a "View all" link). */
   action?: ReactNode;
   children: ReactNode;
   id: string;
+  /** Used in the arrow buttons' labels, e.g. "Next Latest News articles". */
+  itemLabel?: string;
+  /** Small line under the title. */
+  subtitle?: string;
   title: string;
 }) {
   const track = useRef<HTMLUListElement>(null);
@@ -44,15 +50,18 @@ export function CardRow({
   };
 
   return (
-    <section aria-labelledby={`${id}-title`} className="py-(--spacer-large)" id={id}>
+    <section aria-labelledby={`${id}-title`} className="scroll-mt-24 py-(--spacer-large)" id={id}>
       <div className="flex items-center justify-between gap-(--spacer-regular)">
-        <h2 className="font-semibold text-ds-medium" id={`${id}-title`}>
-          {title}
-        </h2>
+        <div>
+          <h2 className="font-semibold text-ds-medium" id={`${id}-title`}>
+            {title}
+          </h2>
+          {subtitle ? <p className="mt-1 text-muted-foreground text-ds-small">{subtitle}</p> : null}
+        </div>
         {edges.overflow ? (
           <div className="flex gap-(--spacer-xsmall)">
             <button
-              aria-label={`Previous ${title} articles`}
+              aria-label={`Previous ${title} ${itemLabel}`}
               className={ARROW}
               disabled={edges.start}
               onClick={() => page(-1)}
@@ -61,7 +70,7 @@ export function CardRow({
               <span aria-hidden="true">←</span>
             </button>
             <button
-              aria-label={`Next ${title} articles`}
+              aria-label={`Next ${title} ${itemLabel}`}
               className={ARROW}
               disabled={edges.end}
               onClick={() => page(1)}

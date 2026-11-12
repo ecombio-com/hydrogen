@@ -6,6 +6,14 @@ export interface BodyHeading {
   text: string;
 }
 
+export type CardVariant = 'article' | 'press' | 'person' | 'logo';
+export interface CardItem {
+  href?: string | undefined;
+  image?: string | undefined;
+  subtitle?: string | undefined;
+  title: string;
+}
+
 export type BodySegment =
   | {html: string; type: 'html'}
   | {html: string; title: string; type: 'accordion'}
@@ -17,11 +25,21 @@ export type BodySegment =
   | {id?: string | undefined; text: string; title: string; type: 'band'}
   | {
       button?: {href: string; label: string} | undefined;
+      eyebrow?: string | undefined;
       id?: string | undefined;
       image?: string | undefined;
+      imageSide?: 'left' | 'right' | undefined;
       text: string;
       title: string;
       type: 'split';
+    }
+  | {
+      id?: string | undefined;
+      items: CardItem[];
+      subtitle?: string | undefined;
+      title: string;
+      type: 'cards';
+      variant: CardVariant;
     };
 
 const SHORTCODE = new RegExp(
@@ -34,6 +52,7 @@ const SHORTCODE = new RegExp(
     String.raw`<p>\s*\[stat:\s*([^|\]]+?)\s*\|\s*([^|\]]*?)\s*\|\s*([^\]]+?)\s*\]\s*</p>`,
     String.raw`<p>\s*\[band:\s*([^\]]+?)\s*\]\s*</p>([\s\S]*?)<p>\s*\[/band\]\s*</p>`,
     String.raw`<p>\s*\[split:\s*([^\]]+?)\s*\]\s*</p>([\s\S]*?)<p>\s*\[/split\]\s*</p>`,
+    String.raw`<p>\s*\[cards:\s*([^\]]+?)\s*\]\s*</p>([\s\S]*?)<p>\s*\[/cards\]\s*</p>`,
   ].join('|'),
   'gi',
 );
@@ -92,18 +111,49 @@ function pushBlockSegment(match: RegExpMatchArray, segments: BodySegment[]): voi
     const id = (head.length > 1 ? head[0] : slugify(title)) ?? '';
     segments.push({id: id || undefined, text: blockText(match[14] ?? ''), title, type: 'band'});
   } else if (match[15] !== undefined) {
-    // [split: title | image | label | href | id]  (id is optional, used as an #anchor)
-    const [title = '', image = '', label = '', href = '', id = ''] = match[15]
+    // [split: title | image | label | href | id | side | eyebrow]  (all after title optional)
+    // side = right puts the image on the right; eyebrow is a heading shown above the row.
+    const [title = '', image = '', label = '', href = '', id = '', side = '', eyebrow = ''] = match[15]
       .split('|')
       .map((part) => plainText(part));
     segments.push({
       button: label && href ? {href, label} : undefined,
+      eyebrow: eyebrow || undefined,
       id: id || undefined,
       image: image || undefined,
+      imageSide: side.toLowerCase() === 'right' ? 'right' : undefined,
       text: blockText(match[16] ?? ''),
       title,
       type: 'split',
     });
+  } else if (match[17] !== undefined) {
+    // [cards: variant | title | subtitle | id]  then one [card: image | title | subtitle | href] per line
+    const [rawVariant = '', title = '', subtitle = '', id = ''] = match[17]
+      .split('|')
+      .map((part) => plainText(part));
+    const variant = (['article', 'press', 'person', 'logo'] as const).find((v) => v === rawVariant.toLowerCase());
+    const items: CardItem[] = [];
+    for (const card of (match[18] ?? '').matchAll(/\[card:\s*([^\]]+?)\s*\]/gi)) {
+      const [image = '', cardTitle = '', cardSubtitle = '', href = ''] = (card[1] ?? '')
+        .split('|')
+        .map((part) => plainText(part));
+      if (cardTitle)
+        items.push({
+          href: href || undefined,
+          image: image || undefined,
+          subtitle: cardSubtitle || undefined,
+          title: cardTitle,
+        });
+    }
+    if (variant && items.length > 0)
+      segments.push({
+        id: id || slugify(title) || undefined,
+        items,
+        subtitle: subtitle || undefined,
+        title,
+        type: 'cards',
+        variant,
+      });
   }
 }
 

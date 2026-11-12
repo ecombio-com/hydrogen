@@ -1,4 +1,6 @@
-import {parseBody, type BodySegment} from '~/lib/shortcodes';
+import {parseBody, type BodySegment, type CardItem, type CardVariant} from '~/lib/shortcodes';
+
+export type {CardItem, CardVariant};
 
 export interface BlockLink {
   href: string;
@@ -15,15 +17,31 @@ export type PageBlock =
   | {html: string; type: 'text'}
   | {segments: BodySegment[]; type: 'body'}
   | {items: StatItem[]; type: 'stats'}
-  | {id?: string | undefined; text: string; title: string; type: 'band'}
+  | {id?: string | undefined; links: BlockLink[]; text: string; title: string; type: 'band'}
   | {
       button?: BlockLink | undefined;
+      eyebrow?: string | undefined;
       id?: string | undefined;
       image?: string | undefined;
+      imageSide?: 'left' | 'right' | undefined;
       text: string;
       title: string;
       type: 'split';
+    }
+  | {
+      id?: string | undefined;
+      items: CardItem[];
+      subtitle?: string | undefined;
+      title: string;
+      type: 'cards';
+      variant: CardVariant;
     };
+
+const CARD_VARIANTS: readonly CardVariant[] = ['article', 'press', 'person', 'logo'];
+const anchorId = (v: unknown) => {
+  const id = text(v);
+  return id && /^[a-z0-9-]+$/.test(id) ? id : undefined;
+};
 
 type Raw = Record<string, unknown>;
 
@@ -37,7 +55,7 @@ function text(v: unknown): string | undefined {
 function safeHref(v: unknown): string | undefined {
   const href = text(v);
   if (!href || href.includes('\\') || href.startsWith('//')) return undefined;
-  return href.startsWith('/') || href.startsWith('#') || href.startsWith('https://')
+  return href.startsWith('/') || href.startsWith('#') || href.startsWith('https://') || href.startsWith('mailto:')
     ? href
     : undefined;
 }
@@ -70,6 +88,14 @@ function parseStat(v: unknown): StatItem | undefined {
   return value && label ? {label, unit: text(v['unit']), value} : undefined;
 }
 
+function parseCard(v: unknown): CardItem | undefined {
+  if (!isRecord(v)) return undefined;
+  const title = text(v['title']);
+  return title
+    ? {href: safeHref(v['href']), image: localImage(v['image']), subtitle: text(v['subtitle']), title}
+    : undefined;
+}
+
 function parseBlock(v: unknown): PageBlock | undefined {
   if (!isRecord(v)) return undefined;
   switch (v['type']) {
@@ -92,7 +118,13 @@ function parseBlock(v: unknown): PageBlock | undefined {
       const body = text(v['text']);
       const id = text(v['id']);
       return title && body
-        ? {id: id && /^[a-z0-9-]+$/.test(id) ? id : undefined, text: body, title, type: 'band'}
+        ? {
+            id: id && /^[a-z0-9-]+$/.test(id) ? id : undefined,
+            links: parseList(v['links'], parseLink),
+            text: body,
+            title,
+            type: 'band',
+          }
         : undefined;
     }
     case 'split': {
@@ -101,12 +133,22 @@ function parseBlock(v: unknown): PageBlock | undefined {
       return title && body
         ? {
             button: parseLink(v['button']),
-            id: text(v['id']) || undefined,
+            eyebrow: text(v['eyebrow']),
+            id: anchorId(v['id']),
             image: localImage(v['image']),
+            imageSide: v['imageSide'] === 'right' ? 'right' : undefined,
             text: body,
             title,
             type: 'split',
           }
+        : undefined;
+    }
+    case 'cards': {
+      const title = text(v['title']);
+      const variant = CARD_VARIANTS.find((c) => c === v['variant']);
+      const items = parseList(v['items'], parseCard);
+      return title && variant && items.length > 0
+        ? {id: anchorId(v['id']), items, subtitle: text(v['subtitle']), title, type: 'cards', variant}
         : undefined;
     }
     default:
@@ -133,7 +175,8 @@ export function pageBlocksFromBody(html: string): PageBlock[] {
       }
       case 'pill': {
         const link = parseLink({href: segment.href, label: segment.label});
-        if (link && last?.type === 'hero') last.links.push(link);
+        // Pills attach to the hero or band right before them.
+        if (link && (last?.type === 'hero' || last?.type === 'band')) last.links.push(link);
         break;
       }
       case 'stat': {
@@ -144,7 +187,8 @@ export function pageBlocksFromBody(html: string): PageBlock[] {
         break;
       }
       case 'band':
-      case 'split': {
+      case 'split':
+      case 'cards': {
         const block = parseBlock(segment);
         if (block) blocks.push(block);
         break;
