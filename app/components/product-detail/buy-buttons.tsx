@@ -150,7 +150,7 @@ export function BuyButtons({
               <button
                 type="submit"
                 disabled={disabled}
-                onClick={() => open('cart')}
+                onClick={() => open('added')}
                 className="inline-flex h-12 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-ds-md bg-black text-ds-regular font-semibold text-white hover:bg-black/85 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {text}

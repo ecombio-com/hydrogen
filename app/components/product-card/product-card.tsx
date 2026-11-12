@@ -30,6 +30,8 @@ export interface ProductCardProps {
   compact?: boolean;
   loading?: 'eager' | 'lazy';
   className?: string;
+  /** false = the card's Add to cart stays in place instead of opening the cart drawer. */
+  openCartOnAdd?: boolean;
 }
 
 export function ProductCard({
@@ -40,6 +42,7 @@ export function ProductCard({
   outOfStockText = COPY.outOfStock,
   loading,
   className,
+  openCartOnAdd = true,
 }: ProductCardProps) {
   const isFeatured = variant === 'featured';
   const isMinimal = variant === 'minimal';
@@ -126,7 +129,7 @@ export function ProductCard({
             />
           </ProductCardContent>
         </ProductCardImageContainer>
-        <CardAddToCart hidden={isMinimal} product={product} />
+        <CardAddToCart hidden={isMinimal} openCart={openCartOnAdd} product={product} />
       </ProductCardRoot>
     </LocalizedLink>
   );

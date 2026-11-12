@@ -19,6 +19,7 @@ import {Page} from '~/components/ui/page';
 import {Sections} from '~/components/ui/sections';
 import {Breadcrumbs} from '~/components/product-detail/breadcrumbs';
 import {BuyButtons} from '~/components/product-detail/buy-buttons';
+import {AddedToCartScreen} from '~/components/cart/added-to-cart-screen';
 import {FloatingBuyBlock} from '~/components/product-detail/floating-buy-block';
 import {FrequentlyAskedQuestionsSection} from '~/components/product-detail/frequently-asked-questions-section';
 import {PopularSearches} from '~/components/product-detail/popular-searches';
@@ -26,7 +27,10 @@ import {ProductHighlights} from '~/components/product-detail/product-highlights'
 import {ProductFormOptions, toOptionGroups} from '~/components/product-detail/product-form';
 import {ProductMedia} from '~/components/product-detail/product-media';
 import {ProductPrice} from '~/components/product-detail/product-price';
-import {ProductResources} from '~/components/product-detail/product-resources';
+// TEMP hidden: import {ProductResources} from '~/components/product-detail/product-resources';
+import {RelatedArticlesSection} from '~/components/product-detail/related-articles-section';
+import {PdpBanner} from '~/components/product-detail/pdp-banner';
+import {ReassuranceBar} from '~/components/product-detail/reassurance-bar';
 import {SpecCarousel} from '~/components/product-detail/spec-carousel';
 import {StickyBuyBar} from '~/components/product-detail/sticky-buy-bar';
 import {TechnicalSpecsSection} from '~/components/product-detail/technical-specs-section';
@@ -364,6 +368,15 @@ export default function Product() {
               </Await>
             </Suspense>
           )}
+          <AddedToCartScreen
+            crossSell={crossSell}
+            item={{
+              imageAlt: selectedVariant?.image?.altText ?? product.title,
+              imageUrl: selectedVariant?.image?.url,
+              subtitle: variantName || undefined,
+              title: product.title,
+            }}
+          />
           <div id="reviews" className="scroll-mt-24">
             <Suspense fallback={<div className="min-h-64" aria-hidden />}>
               <Await resolve={reviews} errorElement={<></>}>
@@ -380,7 +393,10 @@ export default function Product() {
           <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <FrequentlyAskedQuestionsSection html={x.faqBody} faq={x.faq} />}</Await></Suspense>
           <PopularSearches terms={popularSearches} />
           <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <TechnicalSpecsSection html={x.techSpecsBody} specs={x.specs} title={product.title} />}</Await></Suspense>
-          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <ProductResources manualUrl={x.manualUrl} videoUrl={x.assemblyVideoUrl} />}</Await></Suspense>
+          {/* TEMP hidden: <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <ProductResources manualUrl={x.manualUrl} videoUrl={x.assemblyVideoUrl} />}</Await></Suspense> */}
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <RelatedArticlesSection articles={x.relatedArticles} />}</Await></Suspense>
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <PdpBanner banner={x.promoBanner} />}</Await></Suspense>
+          <Suspense fallback={null}><Await resolve={extras} errorElement={<></>}>{(x) => <ReassuranceBar items={x.reassurance} />}</Await></Suspense>
         </Sections>
       </Container>
 

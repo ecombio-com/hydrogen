@@ -51,9 +51,12 @@ function useCartIds() {
 
 export function CardAddToCart({
   hidden,
+  openCart = true,
   product,
 }: {
   hidden?: boolean;
+  /** false = add in place and only show "Added" (used inside the Added to cart screen). */
+  openCart?: boolean;
   product: ProductCardData;
 }) {
   const {open} = useAside();
@@ -92,7 +95,7 @@ export function CardAddToCart({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              open('cart');
+              if (openCart) open('cart');
             }}
           >
             <Check className="size-4" aria-hidden="true" /> {COPY.added}
@@ -105,7 +108,7 @@ export function CardAddToCart({
               e.preventDefault();
               e.stopPropagation();
               setAdded(true);
-              open('cart');
+              if (openCart) open('cart');
               e.currentTarget.form?.requestSubmit(e.currentTarget);
             }}
           >
