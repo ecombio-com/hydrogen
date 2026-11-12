@@ -39,3 +39,38 @@ export function ProductPrice({
     </div>
   );
 }
+// Back Market layout: big price on top; struck-through reference price + green "Save" badge below.
+export function ProductPriceStacked({
+  amount,
+  currencyCode,
+  compareAtAmount,
+  compareLabel = 'MSRP',
+  className,
+}: {
+  amount: string;
+  currencyCode: string;
+  compareAtAmount?: string | null | undefined;
+  compareLabel?: string;
+  className?: string;
+}) {
+  const price = Number(amount);
+  const compareAt = Number(compareAtAmount);
+  const onSale = Boolean(compareAtAmount) && compareAt > price;
+  return (
+    <div className={cn('grid gap-1', className)}>
+      <span className="text-ds-h3 font-semibold tabular-nums text-foreground">
+        {formatPrice(amount, currencyCode)}
+      </span>
+      {onSale && compareAtAmount ? (
+        <div className="flex flex-wrap items-center gap-x-2">
+          <s className="text-ds-small tabular-nums text-muted-foreground">
+            {formatPrice(compareAtAmount, currencyCode)} {compareLabel}
+          </s>
+          <span className="rounded-sm bg-positive/15 px-1 text-ds-small font-semibold tabular-nums text-positive">
+            Save {formatPrice(String(compareAt - price), currencyCode)}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}

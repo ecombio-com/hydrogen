@@ -15,7 +15,7 @@ export function TechnicalSpecsSection({
 }) {
   if (!specs && !html) return null;
   return (
-    <details open className="group" data-slot="technical-specifications" data-source={specs ? 'json' : 'page'}>
+    <details open id="technical-specifications" className="group scroll-mt-24" data-slot="technical-specifications" data-source={specs ? 'json' : 'page'}>
       <summary className="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">
         <h2 className="text-ds-h3 font-semibold">Technical Specifications</h2>
         <ChevronDownIcon

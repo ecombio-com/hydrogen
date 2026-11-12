@@ -26,17 +26,21 @@ import {PopularSearches} from '~/components/product-detail/popular-searches';
 import {ProductHighlights} from '~/components/product-detail/product-highlights';
 import {ProductFormOptions, toOptionGroups} from '~/components/product-detail/product-form';
 import {ProductMedia} from '~/components/product-detail/product-media';
-import {ProductPrice} from '~/components/product-detail/product-price';
+import {ProductPrice, ProductPriceStacked} from '~/components/product-detail/product-price';
+import {WishlistButton} from '~/components/product-detail/wishlist-button';
+import {ProductRecap} from '~/components/product-detail/product-recap';
 // TEMP hidden: import {ProductResources} from '~/components/product-detail/product-resources';
 import {RelatedArticlesSection} from '~/components/product-detail/related-articles-section';
 import {PdpBanner} from '~/components/product-detail/pdp-banner';
 import {ReassuranceBar} from '~/components/product-detail/reassurance-bar';
 import {SpecCarousel} from '~/components/product-detail/spec-carousel';
 import {StickyBuyBar} from '~/components/product-detail/sticky-buy-bar';
+import {StepPicker} from '~/components/product-detail/step-picker';
+import {fillUrlTemplate, parsePdpSteps, variantSubtitle} from '~/lib/pdp-steps';
 import {TechnicalSpecsSection} from '~/components/product-detail/technical-specs-section';
 import {getCollectionTrail} from '~/lib/breadcrumb-trail';
 import {loadProductExtras} from '~/lib/product-extras.server';
-import {PRODUCT_QUERY} from '~/lib/product-fragments';
+import {PRODUCT_QUERY, VARIANT_URL_QUERY} from '~/lib/product-fragments';
 import {
   getSelectedColorImage,
   getSharedImages,
@@ -55,6 +59,7 @@ import {TrackProductView} from '~/@algolia/components/track-product-view';
 import {toPublicAlgoliaConfig} from '~/@algolia/config';
 
 const COPY = {
+  changeOptions: 'Change size or color',
   specsSubtitle: 'Full details in Technical Specifications below',
 };
 
@@ -63,12 +68,14 @@ export const links = () => [{rel: 'stylesheet', href: specsCss}];
 export const meta: Route.MetaFunction = ({data, matches}) => {
   const product = data?.product;
   if (!product) return [{title: 'Product not found'}];
-  const title = product.seo?.title || product.title;
-  const description = product.seo?.description || product.description || '';
+  const vs = data.variantSeo;
+  const brand = brandNameFromMatches(matches);
+  const title = vs ? `${vs.title} | ${brand}` : product.seo?.title || product.title;
+  const description = vs?.description || product.seo?.description || product.description || '';
   const url = data.canonicalUrl;
-  const image = product.featuredImage?.url;
-  const price = product.priceRange.minVariantPrice;
-  const inStock = product.availableForSale;
+  const image = vs?.variant.image?.url ?? product.featuredImage?.url;
+  const price = vs?.variant.price ?? product.priceRange.minVariantPrice;
+  const inStock = vs ? vs.variant.availableForSale : product.availableForSale;
   return [
     {title},
     {name: 'description', content: description},
@@ -99,7 +106,26 @@ export const meta: Route.MetaFunction = ({data, matches}) => {
           'image' in m && m.image ? [m.image.url] : [],
         ),
         ...(product.vendor ? {brand: {'@type': 'Brand', name: product.vendor}} : {}),
-        offers: {
+        ...(data.rating
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: data.rating.value,
+                reviewCount: data.rating.count,
+              },
+            }
+          : {}),
+        offers: vs
+          ? {
+              '@type': 'Offer',
+              price: price.amount,
+              priceCurrency: price.currencyCode,
+              availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              itemCondition: 'https://schema.org/NewCondition',
+              url,
+              ...(vs.variant.sku ? {sku: vs.variant.sku} : {}),
+            }
+          : {
           '@type': 'AggregateOffer',
           priceCurrency: price.currencyCode,
           lowPrice: price.amount,
@@ -144,32 +170,111 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     throw new Error('Expected product handle to be defined');
   }
 
-  const [{product}] = await Promise.all([
+  let selectedOptions = getSelectedProductOptions(request);
+
+  let [{product}] = await Promise.all([
     storefront.query(PRODUCT_QUERY, {
-      variables: {handle, selectedOptions: getSelectedProductOptions(request)},
+      variables: {handle, selectedOptions},
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
+
+  // Not a product handle? It may be a Back Market-style variant URL
+  // (e.g. aventon-pace-4-large-step-through-blue-steel-electric-cruiser-bike).
+  let variantSlug: string | null = null;
+  if (!product?.id) {
+    const {metaobject} = await storefront.query(VARIANT_URL_QUERY, {
+      variables: {slug: handle},
+      cache: storefront.CacheLong(),
+    });
+    const baseHandle = metaobject?.product?.reference?.handle;
+    let options: Record<string, string> | null = null;
+    try {
+      options = metaobject?.options?.value ? JSON.parse(metaobject.options.value) : null;
+    } catch {
+      options = null;
+    }
+    if (baseHandle && options) {
+      variantSlug = handle;
+      selectedOptions = Object.entries(options).map(([name, value]) => ({name, value}));
+      ({product} = await storefront.query(PRODUCT_QUERY, {
+        variables: {handle: baseHandle, selectedOptions},
+      }));
+    }
+  }
 
   if (!product?.id) {
     throw new Response(null, {status: 404});
   }
 
   // The API handle might be localized, so redirect to the localized handle
-  redirectIfHandleIsLocalized(request, {handle, data: product});
+  if (!variantSlug) redirectIfHandleIsLocalized(request, {handle, data: product});
 
   const origin = new URL(request.url).origin;
   const prefix = getLocaleFromRequest(request).pathPrefix;
+  const pdpSteps = parsePdpSteps(
+    (product as {pdpSteps?: {value?: string | null} | null}).pdpSteps?.value,
+  );
+
+  // Products with a urlTemplate: old ?Size=&Color= links move (301) to the descriptive variant URL.
+  if (pdpSteps?.urlTemplate && !variantSlug) {
+    const url = new URL(request.url);
+    const optionNames = new Set(product.options.map((o) => o.name));
+    const hasOptionParams = [...url.searchParams.keys()].some((k) => optionNames.has(k));
+    const selected = product.selectedOrFirstAvailableVariant?.selectedOptions;
+    const slug = selected ? fillUrlTemplate(pdpSteps.urlTemplate, selected) : null;
+    if (hasOptionParams && slug) {
+      for (const k of optionNames) url.searchParams.delete(k);
+      const rest = url.searchParams.toString();
+      throw redirect(`${prefix}/products/${slug}${rest ? `?${rest}` : ''}`, 301);
+    }
+  }
+
   const trail = getCollectionTrail(product.collections.nodes);
   const crumbs = [
     {name: 'Home', path: '/'},
     ...trail.map((c) => ({name: c.title, path: `/collections/${c.handle}`})),
-    {name: product.title, path: `/products/${product.handle}`},
+    // Back Market style: the last crumb is the short model name from the H1 ("iPhone 13 • Unlocked"),
+    // and on a variant page it points at that variant page.
+    {
+      name: pdpSteps?.heading
+        ? `${pdpSteps.heading.name}${pdpSteps.heading.tag ? ` \u2022 ${pdpSteps.heading.tag}` : ''}`
+        : product.title,
+      path: `/products/${variantSlug ?? product.handle}`,
+    },
   ];
   const abs = (p: string) => `${origin}${prefix}${p === '/' ? '' : p}`;
 
+  // Star rating for Google (Shopify's standard reviews.rating / reviews.rating_count fields).
+  const r = product as {ratingValue?: {value?: string} | null; ratingCount?: {value?: string} | null};
+  let rating: {value: number; count: number} | null = null;
+  try {
+    const value = Number(JSON.parse(r.ratingValue?.value ?? 'null')?.value);
+    const count = Number(r.ratingCount?.value);
+    if (value > 0 && count > 0) rating = {value, count};
+  } catch {
+    rating = null;
+  }
+
+  // Back Market-style snippet for a variant page: "Aventon Pace 4 Step-Through Large - Blue Steel - Class 2"
+  const v = product.selectedOrFirstAvailableVariant;
+  const variantSeo =
+    variantSlug && v && pdpSteps?.heading
+      ? (() => {
+          const values = v.selectedOptions.map((o) => o.value).filter((x) => x !== 'Default Title');
+          const name = [pdpSteps.heading.name, values.join(' - ')].join(' ');
+          const title = pdpSteps.heading.tag ? `${name} - ${pdpSteps.heading.tag}` : name;
+          const lead = `${pdpSteps.heading.name}${pdpSteps.heading.tag ? ` (${pdpSteps.heading.tag})` : ''} in ${values.join(', ')}.`;
+          const description = `${lead} ${product.description}`.replace(/\s+/g, ' ').trim().slice(0, 155);
+          return {title, description, variant: v};
+        })()
+      : null;
+
   return {
-    canonicalUrl: origin + new URL(request.url).pathname,
+    // Variant pages (descriptive URL) are their own Google page; the plain URL is the model page.
+    canonicalUrl: abs(`/products/${variantSlug ?? product.handle}`),
+    variantSeo,
+    rating,
     product,
     breadcrumbs: crumbs,
     breadcrumbLd: {
@@ -186,6 +291,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     popularSearches: parsePopularSearches(product.popularSearches),
     trustBadges: parseTrustBadges(product.trustBadges),
     specs: parseSpecs(product.specs),
+    pdpSteps,
 
 
 
@@ -214,6 +320,7 @@ export default function Product() {
 
     trustBadges,
     specs,
+    pdpSteps,
     crossSell,
     extras,
     reviews,
@@ -224,7 +331,8 @@ export default function Product() {
     product.selectedOrFirstAvailableVariant,
     getAdjacentAndFirstAvailableVariants(product),
   );
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
+  // Descriptive-URL products keep the address clean; others mirror options into ?Size=&Color=.
+  useSelectedOptionInUrlParam(pdpSteps?.urlTemplate ? [] : selectedVariant.selectedOptions);
   const productOptions = getProductOptions({
     ...product,
     selectedOrFirstAvailableVariant: selectedVariant,
@@ -250,6 +358,7 @@ export default function Product() {
         ...(selectedVariant?.image ? [selectedVariant.image] : []),
       ])
     : undefined;
+  const heading = pdpSteps?.heading;
   const variantName = selectedVariant?.selectedOptions
     ?.map((o) => o.value)
     .filter((v) => v !== 'Default Title')
@@ -269,6 +378,63 @@ export default function Product() {
               className="lg:sticky lg:top-20 lg:col-span-6 lg:self-start"
             />
             <div className="grid gap-10 lg:col-span-4">
+              {heading ? (
+                <div className="grid gap-6" data-slot="product-info-bm">
+                  <div>
+                    <h1 className="flex flex-col gap-1">
+                      <span className="text-ds-h3 font-semibold leading-tight text-foreground">
+                        {heading.name}
+                        {heading.tag ? <> &bull; {heading.tag}</> : null}
+                      </span>
+                      <span className="text-ds-regular font-normal text-foreground/80">
+                        {variantSubtitle(selectedVariant?.selectedOptions, heading.subtitleOrder)}
+                      </span>
+                    </h1>
+                    <div className="mt-2 min-h-5">
+                      <Suspense fallback={<div className="h-5" aria-hidden />}>
+                        <Await resolve={reviews} errorElement={<></>}>
+                          {(data) => (
+                            <StarRating
+                              compact
+                              summary={
+                                data
+                                  ? {
+                                      averageScore: data.bottomline.average_score,
+                                      totalReviews: data.bottomline.total_review,
+                                    }
+                                  : null
+                              }
+                            />
+                          )}
+                        </Await>
+                      </Suspense>
+                    </div>
+                  </div>
+                  <FloatingBuyBlock>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {selectedVariant ? (
+                        <ProductPriceStacked
+                          className="grow"
+                          amount={selectedVariant.price.amount}
+                          currencyCode={selectedVariant.price.currencyCode}
+                          compareAtAmount={selectedVariant.compareAtPrice?.amount}
+                        />
+                      ) : null}
+                      <div className="flex min-w-0 grow items-center gap-3">
+                        <div className="min-w-[164px] max-w-[256px] grow">
+                          <BuyButtons
+                            selectedVariant={selectedVariant}
+                            availableForSale={product.availableForSale}
+                            quantityPicker={false}
+                          />
+                        </div>
+                        <WishlistButton productHandle={product.handle} />
+                      </div>
+                    </div>
+                  </FloatingBuyBlock>
+                  <DeliveryEstimate delivery={delivery} />
+                </div>
+              ) : (
               <div
                 className="grid data-[uniform-price=true]:gap-10"
                 data-uniform-price={uniform}
@@ -319,7 +485,13 @@ export default function Product() {
                       />
                     </div>
                   ) : null}
-                  {hasOptions ? <ProductFormOptions options={productOptions} /> : null}
+                  {hasOptions && pdpSteps ? (
+                    <a href="#pdp-steps" className="text-ds-regular underline">
+                      {COPY.changeOptions}
+                    </a>
+                  ) : hasOptions ? (
+                    <ProductFormOptions options={productOptions} />
+                  ) : null}
                   <FloatingBuyBlock>
                     <BuyButtons
                       selectedVariant={selectedVariant}
@@ -328,12 +500,48 @@ export default function Product() {
                   </FloatingBuyBlock>
                 </div>
               </div>
+              )}
               <ProductHighlights part="badges" badges={trustBadges} />
               <SpecCarousel specs={specs} subtitle={COPY.specsSubtitle} />
             </div>
           </div>
 
-          {descriptionHtml ? (
+          {hasOptions && pdpSteps ? (
+            <StepPicker
+              selectedOptions={selectedVariant?.selectedOptions ?? []}
+              config={pdpSteps}
+              options={productOptions}
+              images={[...(colorImage ? [colorImage] : []), ...mediaImages]}
+              variantKey={selectedVariant?.id}
+              title={title}
+            />
+          ) : null}
+
+          {heading && pdpSteps ? (
+            <ProductRecap
+              name={`${heading.name}${heading.tag ? ` \u2022 ${heading.tag}` : ''}`}
+              colorHex={
+                productOptions
+                  .find((o) => o.name === 'Color')
+                  ?.optionValues.find((v) => v.selected)?.swatch?.color ?? null
+              }
+              chips={[
+                ...(pdpSteps.recap?.chips ?? []),
+                ...(selectedVariant?.selectedOptions ?? [])
+                  .filter((o) => o.value !== 'Default Title')
+                  .map((o) => o.value),
+              ]}
+              images={[...(colorImage ? [colorImage] : []), ...mediaImages]}
+              selectedVariant={selectedVariant}
+              availableForSale={product.availableForSale}
+              delivery={delivery}
+              recap={pdpSteps.recap}
+              extras={extras}
+            />
+          ) : null}
+
+          {/* Back Market layout: the recap block replaces the description for pdp_steps products. */}
+          {descriptionHtml && !(heading && pdpSteps) ? (
             <div className="mt-ds-large grid gap-10 [&_*]:max-w-none">
               <div data-slot="product-info-description">
                 <div

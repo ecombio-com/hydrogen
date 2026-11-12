@@ -73,6 +73,9 @@ export const PRODUCT_FRAGMENT = `#graphql
     handlingDaysMax: metafield(namespace: "custom", key: "handling_days_max") { value }
     transitExtraDays: metafield(namespace: "custom", key: "transit_extra_days") { value }
     popularSearches: metafield(namespace: "custom", key: "popular_searches") { value }
+    pdpSteps: metafield(namespace: "custom", key: "pdp_steps") { value }
+    ratingValue: metafield(namespace: "reviews", key: "rating") { value }
+    ratingCount: metafield(namespace: "reviews", key: "rating_count") { value }
     encodedVariantExistence
     encodedVariantAvailability
     options {
@@ -231,4 +234,24 @@ export const PRODUCT_QUERY = `#graphql
     }
   }
   ${PRODUCT_FRAGMENT}
+` as const;
+
+// Back Market-style variant URL: /products/<variant-slug> -> product handle + selected options.
+// One variant_url metaobject per variant; its handle is the slug.
+export const VARIANT_URL_QUERY = `#graphql
+  query VariantUrl($slug: String!, $country: CountryCode, $language: LanguageCode)
+  @inContext(country: $country, language: $language) {
+    metaobject(handle: {type: "variant_url", handle: $slug}) {
+      product: field(key: "product") {
+        reference {
+          ... on Product {
+            handle
+          }
+        }
+      }
+      options: field(key: "options") {
+        value
+      }
+    }
+  }
 ` as const;

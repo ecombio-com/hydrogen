@@ -34,7 +34,7 @@ export type PromoBanner = {
   mobileImage?: PromoImage;
 };
 
-export type ReassuranceItem = {icon: string; label: string};
+export type ReassuranceItem = {icon: string; label: string; description?: string};
 
 export type ProductExtras = {
   /** custom.faq (JSON). When set, it wins over faqBody. */
@@ -130,6 +130,7 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
             ... on Metaobject {
               icon: field(key: "icon") { value }
               label: field(key: "label") { value }
+              description: field(key: "description") { value }
             }
           }
         }
@@ -171,7 +172,7 @@ type ExtrasResult = {
         mobileImage?: ImageField;
       } | null;
     } | null;
-    reassurance?: {references?: {nodes: Array<{icon?: Text; label?: Text} | null>} | null} | null;
+    reassurance?: {references?: {nodes: Array<{icon?: Text; label?: Text; description?: Text} | null>} | null} | null;
   } | null;
 };
 
@@ -256,7 +257,8 @@ export async function loadProductExtras(storefront: Storefront, handle: string):
       reassurance: (p.reassurance?.references?.nodes ?? []).flatMap((n) => {
         const label = text(n?.label);
         const icon = text(n?.icon);
-        return label && icon ? [{icon, label}] : [];
+        const description = text(n?.description) || undefined;
+        return label && icon ? [{icon, label, ...(description ? {description} : {})}] : [];
       }),
     };
   } catch {
