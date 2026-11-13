@@ -183,10 +183,16 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   // (e.g. aventon-pace-4-large-step-through-blue-steel-electric-cruiser-bike).
   let variantSlug: string | null = null;
   if (!product?.id) {
-    const {metaobject} = await storefront.query(VARIANT_URL_QUERY, {
+    const cachedLookup = await storefront.query(VARIANT_URL_QUERY, {
       variables: {slug: handle},
       cache: storefront.CacheLong(),
     });
+    const {metaobject} = cachedLookup.metaobject
+      ? cachedLookup
+      : await storefront.query(VARIANT_URL_QUERY, {
+          variables: {slug: handle},
+          cache: storefront.CacheNone(),
+        });
     const baseHandle = metaobject?.product?.reference?.handle;
     let options: Record<string, string> | null = null;
     try {
