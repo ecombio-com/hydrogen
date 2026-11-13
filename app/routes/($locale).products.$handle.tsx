@@ -44,6 +44,8 @@ import {PRODUCT_QUERY, VARIANT_URL_QUERY} from '~/lib/product-fragments';
 import {
   getSelectedColorImage,
   getSharedImages,
+  getTaggedGallery,
+  hasAltTagging,
   hasColorImagePartitioning,
   toMedia,
 } from '~/lib/product-media';
@@ -196,7 +198,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
     const baseHandle = metaobject?.product?.reference?.handle;
     let options: Record<string, string> | null = null;
     try {
-      options = metaobject?.options?.value ? JSON.parse(metaobject.options.value) : null;
+      options = metaobject?.options?.value ? (JSON.parse(metaobject.options.value) as Record<string, string>) : null;
     } catch {
       options = null;
     }
@@ -255,7 +257,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   const r = product as {ratingValue?: {value?: string} | null; ratingCount?: {value?: string} | null};
   let rating: {value: number; count: number} | null = null;
   try {
-    const value = Number(JSON.parse(r.ratingValue?.value ?? 'null')?.value);
+    const value = Number((JSON.parse(r.ratingValue?.value ?? 'null') as {value?: unknown} | null)?.value);
     const count = Number(r.ratingCount?.value);
     if (value > 0 && count > 0) rating = {value, count};
   } catch {
@@ -356,8 +358,14 @@ export default function Product() {
   // Color products show the selected color's image first and hide the other colors' images.
   const optionGroups = toOptionGroups(productOptions);
   const {images, videos} = toMedia(product.media.nodes);
-  const partitioned = hasColorImagePartitioning(optionGroups);
-  const mediaImages = partitioned ? getSharedImages(images, optionGroups) : images;
+  // Photos tagged in their alt text ("Title | Color: Blue") follow every option; otherwise only Color does.
+  const tagged = hasAltTagging(images);
+  const partitioned = !tagged && hasColorImagePartitioning(optionGroups);
+  const mediaImages = tagged
+    ? getTaggedGallery(images, selectedVariant?.selectedOptions ?? [], selectedVariant?.image)
+    : partitioned
+      ? getSharedImages(images, optionGroups)
+      : images;
   const colorImage = partitioned
     ? getSelectedColorImage(optionGroups, [
         ...images,

@@ -69,3 +69,48 @@ export function getSelectedColorImage(
   if (!url) return undefined;
   return images.find((image) => image.url === url) ?? {url, altText: null, width: null, height: null};
 }
+
+// ---- Variant photos by alt-text tag (PDP-PLAYBOOK section 7) ----
+// A photo whose alt is "<Title> | <Option>: <Value> | ..." belongs to the variants with those values.
+// A photo with no tag is shared. Order: the variant's hero, then its tagged photos, then shared photos.
+// Photos tagged for other values are hidden.
+const TAG_SEP = ' | ';
+
+function altTags(alt?: string | null): Record<string, string> | null {
+  if (!alt || !alt.includes(TAG_SEP)) return null;
+  const tags: Record<string, string> = {};
+  for (const part of alt.split(TAG_SEP).slice(1)) {
+    const i = part.indexOf(':');
+    if (i > 0) tags[part.slice(0, i).trim().toLowerCase()] = part.slice(i + 1).trim().toLowerCase();
+  }
+  return Object.keys(tags).length ? tags : null;
+}
+
+/** True when the product's photos use variant tags in their alt text. */
+export function hasAltTagging(images: MediaImageData[]): boolean {
+  return images.some((image) => altTags(image.altText) !== null);
+}
+
+const sameUrl = (a?: string | null, b?: string | null) =>
+  Boolean(a && b) && a!.split('?')[0] === b!.split('?')[0];
+
+export function getTaggedGallery(
+  images: MediaImageData[],
+  selectedOptions: ReadonlyArray<{name: string; value: string}>,
+  variantImage?: MediaImageData | null,
+): MediaImageData[] {
+  const selected = new Map(selectedOptions.map((o) => [o.name.toLowerCase(), o.value.toLowerCase()]));
+  const own: MediaImageData[] = [];
+  const shared: MediaImageData[] = [];
+  for (const image of images) {
+    const tags = altTags(image.altText);
+    if (!tags) shared.push(image);
+    else if (Object.entries(tags).every(([k, v]) => !selected.has(k) || selected.get(k) === v)) own.push(image);
+  }
+  const hero = variantImage?.url
+    ? images.find((image) => sameUrl(image.url, variantImage.url)) ?? variantImage
+    : undefined;
+  const rest = [...own, ...shared].filter((image) => !hero || !sameUrl(image.url, hero.url));
+  const gallery = hero ? [hero, ...rest] : rest;
+  return gallery.length ? gallery : images;
+}

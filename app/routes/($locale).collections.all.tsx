@@ -85,7 +85,7 @@ export default function CollectionAll() {
 
           <div className="sticky top-[calc(var(--header-offset,0px)_+_0.75rem)] z-20 flex items-center rounded-2xl border border-border-subtle bg-card px-4 py-3 [transition:var(--header-offset-transition,none)]">
             <div className="ml-auto">
-              <SortSelect />
+              <SortSelect exclude={['best-selling']} />
             </div>
           </div>
 
