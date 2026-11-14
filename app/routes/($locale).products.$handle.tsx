@@ -295,9 +295,9 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
         item: abs(c.path),
       })),
     },
-    delivery: parseDelivery(product),
+    delivery: parseDelivery(product.policyDays?.reference ?? {}),
     popularSearches: parsePopularSearches(product.popularSearches),
-    trustBadges: parseTrustBadges(product.trustBadges),
+    trustBadges: parseTrustBadges(product.policyBadges?.reference?.badges),
     specs: parseSpecs(product.specs),
     pdpSteps,
 

@@ -1,5 +1,5 @@
 // Path: app/components/product-detail/reassurance-bar.tsx
-// Reassurance bar (custom.reassurance): one gray bar, icon + label per item.
+// Reassurance bar (pdp.policy reassurance): one gray bar, icon + label per item.
 // icon is a name mapped below; an image URL renders as an image; unknown names get a check mark.
 import {
   Award,

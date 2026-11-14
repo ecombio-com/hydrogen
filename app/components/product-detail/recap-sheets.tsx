@@ -31,7 +31,7 @@ const COPY = {
 
 type Sheet = 'specs' | 'perks' | 'faq';
 
-// Same icon names as the reassurance bar (custom.reassurance), so one entry drives both places.
+// Same icon names as the reassurance bar (pdp.policy reassurance), so one entry drives both places.
 const PERK_ICONS: Record<string, LucideIcon> = {
   support: Headphones,
   headphones: Headphones,
@@ -52,7 +52,7 @@ const PERK_ICONS: Record<string, LucideIcon> = {
 const perkIcon = (name: string) => PERK_ICONS[name.toLowerCase().replace(/[^a-z]/g, '')] ?? CircleCheck;
 
 // The three Back Market rows under "Comes with". Each opens a side sheet. Data comes from the
-// product's JSON fields (custom.specs, custom.faq) and the custom.reassurance entries.
+// product's JSON fields (pdp.specs, pdp.faq) and the pdp.policy reassurance entries.
 // A row only shows when its data exists.
 export function RecapSheets({name, extras}: {name: string; extras: Promise<ProductExtras>}) {
   const [open, setOpen] = useState<Sheet | null>(null);

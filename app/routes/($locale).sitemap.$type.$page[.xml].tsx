@@ -41,7 +41,7 @@ export async function loader({request, params, context}: Route.LoaderArgs) {
 
 const VARIANT_SLUGS_QUERY = `#graphql
   query VariantSlugs {
-    metaobjects(type: "variant_url", first: 250) {
+    metaobjects(type: "pdp_variant_url", first: 250) {
       nodes {
         handle
         product: field(key: "product") {

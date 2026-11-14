@@ -37,7 +37,7 @@ export interface PdpSteps {
   v: 1;
   /** Back Market-style variant URL, e.g. "aventon-pace-4-{Size}-step-through-{Color}-electric-cruiser-bike".
    *  Each {Option} is replaced by the slugified selected value. Each filled URL needs a matching
-   *  variant_url entry in Shopify (scripts/shopify/set-variant-urls.mjs creates them). */
+   *  pdp_variant_url entry in Shopify (scripts/shopify/set-variant-urls.mjs creates them). */
   urlTemplate?: string;
   heading?: PdpHeading;
   recap?: PdpRecap;

@@ -68,19 +68,23 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
   query ProductExtras($handle: String!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     product(handle: $handle) {
-      faqJson: metafield(namespace: "custom", key: "faq") { value }
-      specsJson: metafield(namespace: "custom", key: "specs") { value }
+      faqJson: metafield(namespace: "pdp", key: "faq") { value }
+      specsJson: metafield(namespace: "pdp", key: "specs") { value }
       faq: metafield(namespace: "custom", key: "frequently_asked_questions") {
         reference { ... on Page { body } }
       }
       techSpecs: metafield(namespace: "custom", key: "technical_specifications") {
         reference { ... on Page { body } }
       }
-      ownersManual: metafield(namespace: "custom", key: "owners_manual") {
-        reference { ... on GenericFile { url } }
+      resources: metafield(namespace: "pdp", key: "resources") {
+        reference {
+          ... on Metaobject {
+            ownersManual: field(key: "manual") { reference { ... on GenericFile { url } } }
+            assemblyVideo: field(key: "video") { value }
+          }
+        }
       }
-      assemblyVideo: metafield(namespace: "custom", key: "assembly_video") { value }
-      expertReviews: metafield(namespace: "custom", key: "expert_reviews") {
+      expertReviews: metafield(namespace: "pdp", key: "videos") {
         references(first: 20) {
           nodes {
             ... on Metaobject {
@@ -96,7 +100,7 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
           }
         }
       }
-      relatedArticles: metafield(namespace: "custom", key: "related_articles") {
+      relatedArticles: metafield(namespace: "pdp", key: "articles") {
         references(first: 10) {
           nodes {
             ... on Article {
@@ -112,7 +116,7 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
           }
         }
       }
-      pdpBanner: metafield(namespace: "custom", key: "pdp_banner") {
+      pdpBanner: metafield(namespace: "pdp", key: "banner") {
         reference {
           ... on Metaobject {
             heading: field(key: "heading") { value }
@@ -124,7 +128,8 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
           }
         }
       }
-      reassurance: metafield(namespace: "custom", key: "reassurance") {
+      policy: metafield(namespace: "pdp", key: "policy") {
+        reference { ... on Metaobject { reassurance: field(key: "reassurance") {
         references(first: 8) {
           nodes {
             ... on Metaobject {
@@ -134,7 +139,7 @@ const PRODUCT_EXTRAS_QUERY = `#graphql
             }
           }
         }
-      }
+      } } } }
     }
   }
 ` as const;
@@ -158,8 +163,7 @@ type ExtrasResult = {
     specsJson?: Text;
     faq?: {reference?: {body?: string} | null} | null;
     techSpecs?: {reference?: {body?: string} | null} | null;
-    ownersManual?: {reference?: {url?: string} | null} | null;
-    assemblyVideo?: Text;
+    resources?: {reference?: {ownersManual?: {reference?: {url?: string} | null} | null; assemblyVideo?: Text} | null} | null;
     expertReviews?: {references?: {nodes: Array<{fields?: ReviewField[]}>} | null} | null;
     relatedArticles?: {references?: {nodes: Array<Partial<RelatedArticle> & {excerpt?: string | null; image?: RelatedArticle['image'] | null}>} | null} | null;
     pdpBanner?: {
@@ -172,7 +176,7 @@ type ExtrasResult = {
         mobileImage?: ImageField;
       } | null;
     } | null;
-    reassurance?: {references?: {nodes: Array<{icon?: Text; label?: Text; description?: Text} | null>} | null} | null;
+    policy?: {reference?: {reassurance?: {references?: {nodes: Array<{icon?: Text; label?: Text; description?: Text} | null>} | null} | null} | null} | null;
   } | null;
 };
 
@@ -226,8 +230,8 @@ export async function loadProductExtras(storefront: Storefront, handle: string):
       specs: parseSpecsJson(p.specsJson?.value, handle),
       faqBody: p.faq?.reference?.body ?? null,
       techSpecsBody: p.techSpecs?.reference?.body ?? null,
-      manualUrl: p.ownersManual?.reference?.url ?? null,
-      assemblyVideoUrl: text(p.assemblyVideo) ?? null,
+      manualUrl: p.resources?.reference?.ownersManual?.reference?.url ?? null,
+      assemblyVideoUrl: text(p.resources?.reference?.assemblyVideo) ?? null,
       expertReviews: toExpertReviews(p.expertReviews?.references?.nodes ?? []),
       relatedArticles: (p.relatedArticles?.references?.nodes ?? []).flatMap((a) =>
         a?.id && a.handle && a.title && a.blog
@@ -254,7 +258,7 @@ export async function loadProductExtras(storefront: Storefront, handle: string):
               mobileImage: toPromoImage(banner.mobileImage),
             }
           : null,
-      reassurance: (p.reassurance?.references?.nodes ?? []).flatMap((n) => {
+      reassurance: (p.policy?.reference?.reassurance?.references?.nodes ?? []).flatMap((n) => {
         const label = text(n?.label);
         const icon = text(n?.icon);
         const description = text(n?.description) || undefined;

@@ -29,7 +29,7 @@ const CROSS_SELL_QUERY = `#graphql
     $language: LanguageCode
   ) @inContext(country: $country, language: $language) {
     product(handle: $handle) {
-      frequentlyBought: metafield(namespace: "custom", key: "frequently_bought_together") {
+      frequentlyBought: metafield(namespace: "pdp", key: "bought_together") {
         references(first: 4) {
           nodes {
             ... on Product {

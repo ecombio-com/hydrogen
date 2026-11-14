@@ -69,11 +69,17 @@ export const PRODUCT_FRAGMENT = `#graphql
     variantsCount { count }
     priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } }
     compareAtPriceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } }
-    handlingDaysMin: metafield(namespace: "custom", key: "handling_days_min") { value }
-    handlingDaysMax: metafield(namespace: "custom", key: "handling_days_max") { value }
-    transitExtraDays: metafield(namespace: "custom", key: "transit_extra_days") { value }
+    policyDays: metafield(namespace: "pdp", key: "policy") {
+      reference {
+        ... on Metaobject {
+          handlingDaysMin: field(key: "handling_min") { value }
+          handlingDaysMax: field(key: "handling_max") { value }
+          transitExtraDays: field(key: "transit_extra") { value }
+        }
+      }
+    }
     popularSearches: metafield(namespace: "custom", key: "popular_searches") { value }
-    pdpSteps: metafield(namespace: "custom", key: "pdp_steps") { value }
+    pdpSteps: metafield(namespace: "pdp", key: "steps") { value }
     ratingValue: metafield(namespace: "reviews", key: "rating") { value }
     ratingCount: metafield(namespace: "reviews", key: "rating_count") { value }
     encodedVariantExistence
@@ -165,7 +171,8 @@ export const PRODUCT_FRAGMENT = `#graphql
         }
       }
     }
-    trustBadges: metafield(namespace: "custom", key: "trust_badges") {
+    policyBadges: metafield(namespace: "pdp", key: "policy") {
+      reference { ... on Metaobject { badges: field(key: "badges") {
       references(first: 10) {
         nodes {
           ... on Metaobject {
@@ -187,7 +194,7 @@ export const PRODUCT_FRAGMENT = `#graphql
           }
         }
       }
-    }
+    } } } }
     specs: metafield(namespace: "custom", key: "product_specs") {
       references(first: 12) {
         nodes {
@@ -237,11 +244,11 @@ export const PRODUCT_QUERY = `#graphql
 ` as const;
 
 // Back Market-style variant URL: /products/<variant-slug> -> product handle + selected options.
-// One variant_url metaobject per variant; its handle is the slug.
+// One pdp_variant_url metaobject per variant; its handle is the slug.
 export const VARIANT_URL_QUERY = `#graphql
   query VariantUrl($slug: String!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
-    metaobject(handle: {type: "variant_url", handle: $slug}) {
+    metaobject(handle: {type: "pdp_variant_url", handle: $slug}) {
       product: field(key: "product") {
         reference {
           ... on Product {
