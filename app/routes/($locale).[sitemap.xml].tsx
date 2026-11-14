@@ -1,5 +1,6 @@
 import type {Route} from './+types/($locale).[sitemap.xml]';
 import {getSitemapIndex} from '@shopify/hydrogen';
+import {formatSitemapResponse} from '~/lib/sitemap-format';
 
 export async function loader({
   request,
@@ -10,7 +11,5 @@ export async function loader({
     request,
   });
 
-  response.headers.set('Cache-Control', `max-age=${60 * 60 * 24}`);
-
-  return response;
+  return formatSitemapResponse(response);
 }

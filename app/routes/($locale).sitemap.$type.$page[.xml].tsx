@@ -2,6 +2,7 @@ import type {Route} from './+types/($locale).sitemap.$type.$page[.xml]';
 import {getSitemap} from '@shopify/hydrogen';
 import {isHiddenPageHandle} from '~/lib/hidden-pages';
 import {getStorefrontConfig, isOtherBrandHandle} from '~/lib/storefront-config';
+import {formatSitemapResponse} from '~/lib/sitemap-format';
 
 export async function loader({request, params, context}: Route.LoaderArgs) {
   const {storefront} = context;
@@ -32,16 +33,13 @@ export async function loader({request, params, context}: Route.LoaderArgs) {
   });
 
   const withVariants = await addVariantUrls(stripped, storefront);
-  const headers = new Headers(response.headers);
-  headers.delete('Content-Length');
-  headers.set('Cache-Control', `max-age=${60 * 60 * 24}`);
-
-  return new Response(withVariants, {status: response.status, headers});
+  return formatSitemapResponse(response, withVariants);
 }
 
 const VARIANT_SLUGS_QUERY = `#graphql
-  query VariantSlugs {
-    metaobjects(type: "pdp_variant_url", first: 250) {
+  query VariantSlugs($after: String) {
+    metaobjects(type: "pdp_variant_url", first: 250, after: $after) {
+      pageInfo { hasNextPage endCursor }
       nodes {
         handle
         product: field(key: "product") {
@@ -56,12 +54,20 @@ const VARIANT_SLUGS_QUERY = `#graphql
   }
 `;
 
-// Adds one <url> per variant_url entry by cloning its base product's <url> block (keeps locale prefix and hreflang).
+// Adds one <url> per pdp_variant_url entry by cloning its base product's <url> block (keeps locale prefix and hreflang).
 async function addVariantUrls(xml: string, storefront: any): Promise<string> {
   try {
-    const data: any = await storefront.query(VARIANT_SLUGS_QUERY, {cache: storefront.CacheShort()});
+    // Every pdp_variant_url entry, 250 per page (more than 250 variants would otherwise be cut off).
+    const nodes: any[] = [];
+    let after: string | null = null;
+    for (let page = 0; page < 20; page++) {
+      const data: any = await storefront.query(VARIANT_SLUGS_QUERY, {variables: {after}, cache: storefront.CacheShort()});
+      nodes.push(...(data?.metaobjects?.nodes ?? []));
+      if (!data?.metaobjects?.pageInfo?.hasNextPage) break;
+      after = data.metaobjects.pageInfo.endCursor;
+    }
     const byBase = new Map<string, string[]>();
-    for (const node of data?.metaobjects?.nodes ?? []) {
+    for (const node of nodes) {
       const base = node?.product?.reference?.handle;
       if (!base || !node.handle) continue;
       byBase.set(base, [...(byBase.get(base) ?? []), node.handle]);

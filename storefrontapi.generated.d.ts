@@ -3543,11 +3543,12 @@ export type PredictiveSearchQuery = {
 };
 
 export type VariantSlugsQueryVariables = StorefrontAPI.Exact<{
-  [key: string]: never;
+  after?: StorefrontAPI.InputMaybe<StorefrontAPI.Scalars['String']['input']>;
 }>;
 
 export type VariantSlugsQuery = {
   metaobjects: {
+    pageInfo: Pick<StorefrontAPI.PageInfo, 'hasNextPage' | 'endCursor'>;
     nodes: Array<
       Pick<StorefrontAPI.Metaobject, 'handle'> & {
         product?: StorefrontAPI.Maybe<{
@@ -3729,7 +3730,7 @@ interface GeneratedQueryTypes {
     return: PredictiveSearchQuery;
     variables: PredictiveSearchQueryVariables;
   };
-  '#graphql\n  query VariantSlugs {\n    metaobjects(type: "pdp_variant_url", first: 250) {\n      nodes {\n        handle\n        product: field(key: "product") {\n          reference {\n            ... on Product {\n              handle\n            }\n          }\n        }\n      }\n    }\n  }\n': {
+  '#graphql\n  query VariantSlugs($after: String) {\n    metaobjects(type: "pdp_variant_url", first: 250, after: $after) {\n      pageInfo { hasNextPage endCursor }\n      nodes {\n        handle\n        product: field(key: "product") {\n          reference {\n            ... on Product {\n              handle\n            }\n          }\n        }\n      }\n    }\n  }\n': {
     return: VariantSlugsQuery;
     variables: VariantSlugsQueryVariables;
   };
